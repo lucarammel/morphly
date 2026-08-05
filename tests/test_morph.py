@@ -234,3 +234,44 @@ def test_explain(store: Store):
 def test_put_rejects_foreign_objects():
     with pytest.raises(TypeError, match="neither an Entity nor a Config"):
         Store("nope")  # ty: ignore[invalid-argument-type]
+
+
+def test_entity_repr():
+    assert repr(Plant(name="a", pmax=1, cost=1)) == "Plant(name='a')"
+
+
+def test_delete_repr():
+    order = Order(name="o_a", volume=1, price=1)
+    assert repr(Delete(order)) == "Delete(Order(name='o_a'))"
+
+
+def test_patch_repr():
+    plant = Plant(name="a", pmax=1, cost=1)
+    assert repr(Patch(plant, cleared=5)) == "Patch(Plant(name='a'), cleared)"
+
+
+def test_patch_requires_at_least_one_field():
+    with pytest.raises(ValueError, match="no field"):
+        Patch(Plant(name="a", pmax=1, cost=1))
+
+
+def test_store_repr(store: Store):
+    assert repr(store) == "Store(Plant=1, ThermalPlant=1; BidParams)"
+
+
+def test_pipeline_repr():
+    assert repr(Pipeline(bidding, clearing)) == "Pipeline(bidding, clearing)"
+
+
+def test_step_rejects_duplicate_config_type(store: Store):
+    with pytest.raises(LookupError, match="several BidParams"):
+        Pipeline(Step(bidding, BidParams(margin=1.0), BidParams(margin=2.0))).run(store)
+
+
+def test_patch_target_runtime_type_mismatch_is_rejected(store: Store):
+    @module
+    def bad(plants: list[Plant]) -> list[Patch[Plant]]:
+        return [Patch(Order(name="o_x", volume=1, price=1), cleared=1)]  # ty: ignore[invalid-return-type]
+
+    with pytest.raises(TypeError, match="not in its return type"):
+        Pipeline(bad).run(store)
