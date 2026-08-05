@@ -12,8 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
       - run: uv sync
       - run: uv run ruff check morph tests
       - run: uv run ruff format --check morph tests
@@ -23,8 +21,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
       - run: uv sync
       - run: uv run ty check
 
@@ -35,8 +31,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
       - run: uv sync
       - run: uv run pytest --cov=morph --cov-report=term-missing
       - name: Generate coverage badge
