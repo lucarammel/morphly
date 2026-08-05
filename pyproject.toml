@@ -15,7 +15,9 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Typing :: Typed",
 ]
-dependencies = ["pydantic>=2.9"]
+dependencies = [
+    "pydantic>=2.13.4",
+]
 
 [project.urls]
 Homepage = "https://github.com/lucarammel/morph"
@@ -34,14 +36,18 @@ docs = [
 ]
 
 [build-system]
-requires = ["uv_build>=0.7.19"]
+requires = ["uv_build>=0.7.19,<0.8"]
 build-backend = "uv_build"
-
-[tool.ruff]
-line-length = 120
 
 [[tool.uv.index]]
 url = "https://pypi.org/simple/"
+
+[tool.uv.build-backend]
+module-name = "morph"
+module-root = ""
+
+[tool.ruff]
+line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
