@@ -4,12 +4,12 @@ title: morph
 
 # morph
 
-`morph` orchestre des **modules indépendants** qui partagent un **jeu d'objets métier communs**. Chaque
-module lit le sous-ensemble d'objets dont il a besoin, et déclare ce qu'il modifie.
+`morph` orchestrates **independent modules** that share a **common set of business objects**. Each module
+reads the subset of objects it needs, and declares what it changes.
 
-Une seule dépendance : `pydantic`. Python ≥ 3.13.
+One dependency: `pydantic`. Python ≥ 3.13.
 
-## Exemple
+## Example
 
 ```python
 from morph import Config, Delete, Entity, Patch, Pipeline, Step, Store, module
@@ -42,34 +42,34 @@ store = Store(Plant(name="a", pmax=100, cost=10), Plant(name="b", pmax=50, cost=
 Pipeline(Step(bidding, BidParams(margin=1.2)), clearing).run(store)
 ```
 
-## Problème
+## Problem
 
-Chaîner N modules de calcul sur un état métier partagé, avec :
+Chaining N computation modules over shared business state, with:
 
-- des objets métier communs, typés et validés ;
-- des modules qui ne connaissent ni l'orchestrateur ni les autres modules ;
-- un contrat explicite : ce qu'un module lit, ce qu'il crée, ce qu'il touche ;
-- un échec **avant** le calcul quand le chaînage est incohérent.
+- common business objects, typed and validated;
+- modules that know neither the orchestrator nor each other;
+- an explicit contract: what a module reads, what it creates, what it touches;
+- a failure **before** the run when the chaining is inconsistent.
 
-Les orchestrateurs maison convergent tous vers les mêmes défauts, que `morph` refuse par construction.
+Hand-rolled orchestrators all converge on the same flaws, which `morph` refuses by construction.
 
-| Défaut classique | Ce que fait `morph` |
+| Classic flaw | What `morph` does instead |
 |---|---|
-| Registre global `enum -> classe` à modifier pour chaque nouvel objet | Le **type est la clé**. Rien à enregistrer. |
-| Modifications transportées en `dict[str, Any]` non validés | Un module renvoie des **objets pydantic** ou des `Patch` typés. |
-| 5–6 méthodes abstraites de plomberie par module | Un module est **une fonction annotée**. |
-| Besoins déclarés à la main (`get_objects_used()`) et jamais vérifiés | Les besoins **sont** la signature, et ils sont vérifiés. |
-| Résolution de références par nom, à la main, dans le handler | Les objets lus sont les objets du `Store`. |
-| Mutations qui fuient d'un module à l'autre | Seul le **retour** est appliqué. |
-| `deepcopy` de tout l'état à chaque étape | Copie du **seul sous-ensemble lu**, désactivable. |
+| Global `enum -> class` registry to update for every new object | The **type is the key**. Nothing to register. |
+| Changes carried around as unvalidated `dict[str, Any]` | A module returns typed **pydantic objects** or `Patch` values. |
+| 5–6 abstract plumbing methods per module | A module is **one annotated function**. |
+| Requirements declared by hand (`get_objects_used()`) and never checked | The requirements **are** the signature, and they're checked. |
+| Manual by-name reference resolution in the handler | The objects read are the objects in the `Store`. |
+| Mutations that leak from one module to another | Only the **return value** is applied. |
+| `deepcopy` of the whole state on every step | Copy of the **subset actually read**, and it can be turned off. |
 
-## Principes
+## Principles
 
-1. **Le type est la clé.** Pas d'enum, pas de mapping nom→classe, pas de registre.
-2. **La signature est le contrat.** Les annotations décrivent entrées et sorties ; le noyau les lit.
-3. **Pas d'effet de bord implicite.** Muter une entrée n'a aucun effet ; seul le retour est appliqué.
-4. **Échouer avant de calculer.** Une incohérence de chaînage est une erreur au démarrage.
-5. **Zéro cérémonie.** Aucune classe à hériter pour écrire un module.
+1. **The type is the key.** No enum, no name-to-class mapping, no registry.
+2. **The signature is the contract.** Annotations describe inputs and outputs; the core reads them.
+3. **No implicit side effects.** Mutating an input has no effect; only the return value is applied.
+4. **Fail before computing.** An inconsistent chain is a startup error.
+5. **Zero ceremony.** No base class to inherit from to write a module.
 
-Pour le détail des concepts et des règles de validation, voir [Concepts](concepts.md),
-[Modules et pipelines](modules-and-pipelines.md) et [Validation](validation.md).
+For the full concepts and validation rules, see [Concepts](concepts.md),
+[Modules and pipelines](modules-and-pipelines.md) and [Validation](validation.md).

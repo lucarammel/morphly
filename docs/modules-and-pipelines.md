@@ -1,6 +1,6 @@
-# Modules et pipelines
+# Modules and pipelines
 
-Un module est une fonction décorée par `@module`.
+A module is a function decorated with `@module`.
 
 ```python
 @module
@@ -8,68 +8,68 @@ def bidding(plants: list[Plant], params: BidParams) -> list[Order]:
     return [Order(name=f"o_{p.name}", volume=p.pmax, price=p.cost * params.margin) for p in plants]
 ```
 
-## Règles d'injection (paramètres)
+## Injection rules (parameters)
 
-| Annotation | Reçoit | Erreur |
+| Annotation | Receives | Error |
 |---|---|---|
-| `list[X]`, `X: Entity` | `store.all(X)` — liste, éventuellement vide | `TypeError` si `X` n'est pas une `Entity` |
-| `X`, `X: Config` | la config de l'étape, sinon `store.one(X)` | `LookupError` si introuvable / ambiguë |
-| absente | — | `TypeError` à la déclaration |
-| autre (`dict`, `str`, `Store`, …) | — | `TypeError` à la déclaration |
+| `list[X]`, `X: Entity` | `store.all(X)` — a list, possibly empty | `TypeError` if `X` is not an `Entity` |
+| `X`, `X: Config` | the step's config, else `store.one(X)` | `LookupError` if missing / ambiguous |
+| missing | — | `TypeError` at declaration |
+| other (`dict`, `str`, `Store`, …) | — | `TypeError` at declaration |
 
-Les valeurs injectées sont **deep-copiées** par défaut : un module ne peut pas corrompre l'état lu par
-un autre. `Pipeline.run(copy_inputs=False)` désactive la copie quand le volume l'impose — la garantie
-d'isolation disparaît alors, et c'est un choix conscient, pas un défaut.
+Injected values are **deep-copied** by default: a module can't corrupt the state read by another one.
+`Pipeline.run(copy_inputs=False)` disables the copy when volume demands it — the isolation guarantee then
+disappears, and that's a conscious choice, not a default.
 
-## Règles de sortie (retour)
+## Output rules (return value)
 
-L'annotation de retour est **obligatoire** et constitue le contrat de sortie.
+The return annotation is **required** and forms the output contract.
 
-| Retour | Effet |
+| Return | Effect |
 |---|---|
-| `None` | Aucun changement. Module en lecture seule (export, contrôle, métriques). |
-| une `Entity` / un `Config` | Upsert. |
-| un itérable de `Entity` / `Config` / `Patch` / `Delete` | Appliqué dans l'ordre. |
+| `None` | No change. Read-only module (export, monitoring, metrics). |
+| an `Entity` / a `Config` | Upsert. |
+| an iterable of `Entity` / `Config` / `Patch` / `Delete` | Applied in order. |
 
 ```python
--> list[Order]                            # crée / remplace des Order
--> list[Patch[MarketArea]]                # met à jour quelques champs
--> list[Delete[Order]]                    # supprime
--> list[Order | Patch[MarketArea]]        # plusieurs types, plusieurs opérations
--> None                                   # ne touche à rien
+-> list[Order]                            # creates / replaces Order instances
+-> list[Patch[MarketArea]]                # updates a few fields
+-> list[Delete[Order]]                    # deletes
+-> list[Order | Patch[MarketArea]]        # several types, several operations
+-> None                                   # touches nothing
 ```
 
-Produire un type non déclaré est une `TypeError`. Le contrat distingue :
+Producing an undeclared type is a `TypeError`. The contract distinguishes:
 
-- **produit** (`-> list[Order]`) : le type peut ne pas exister avant, il sera créé ;
-- **touché** (`Patch[X]`, `Delete[X]`) : le type doit exister avant.
+- **produced** (`-> list[Order]`): the type may not exist yet, it will be created;
+- **touched** (`Patch[X]`, `Delete[X]`): the type must already exist.
 
-C'est ce qui permet à `check` de raisonner sur le chaînage — voir [Validation](validation.md).
+This is what lets `check` reason about the chaining — see [Validation](validation.md).
 
-## `Step` — configuration par étape
+## `Step` — per-step configuration
 
-Un pipeline peut lancer **deux fois le même module avec des paramètres différents** (clearing J-1 puis
-intraday, deux zones, deux horizons). La config vit donc au niveau de l'étape :
+A pipeline can run **the same module twice with different parameters** (day-ahead clearing then intraday,
+two zones, two horizons). Config therefore lives at the step level:
 
 ```python
 Pipeline(
     Step(clearing, ClearingParams(mode="DA"), name="clearing_da"),
     Step(clearing, ClearingParams(mode="ID"), name="clearing_id"),
-    settlement,                       # module nu : config lue dans le Store
+    settlement,                       # bare module: config read from the Store
 )
 ```
 
-- `Step(module, *configs, name=None)` — `name` défaut = nom de la fonction, suffixé si doublon.
-- Résolution d'une `Config` : d'abord les configs de l'étape, sinon `store.one(...)`.
-- Un module nu passé à `Pipeline` est équivalent à `Step(module)`.
+- `Step(module, *configs, name=None)` — `name` defaults to the function's name, suffixed on collision.
+- Resolving a `Config`: the step's configs first, then `store.one(...)`.
+- A bare module passed to `Pipeline` is equivalent to `Step(module)`.
 
 ## `Pipeline`
 
-| Méthode | Effet |
+| Method | Effect |
 |---|---|
-| `run(store, *, copy_inputs=True, on_step=None)` | `check`, puis exécute les étapes dans l'ordre. Retourne le `store` muté. |
-| `check(store)` | Valide le chaînage sans rien exécuter. |
-| `explain()` | Rend le graphe lectures / créations / modifications, une ligne par étape. |
+| `run(store, *, copy_inputs=True, on_step=None)` | `check`, then runs the steps in order. Returns the mutated `store`. |
+| `check(store)` | Validates the chaining without running anything. |
+| `explain()` | Renders the reads / creates / modifies graph, one line per step. |
 
-`on_step(step, store)` est appelé après chaque étape : logs, métriques, snapshot, écriture des sorties.
-Un seul hook, il couvre tous les besoins d'observabilité.
+`on_step(step, store)` is called after each step: logs, metrics, snapshots, writing outputs. A single
+hook covers every observability need.

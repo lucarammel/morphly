@@ -1,21 +1,21 @@
 # Validation
 
-Trois barrières, de la plus précoce à la plus tardive.
+Three barriers, from earliest to latest.
 
-| Quand | Ce qui est vérifié | Exception |
+| When | What's checked | Exception |
 |---|---|---|
-| `@module` (import) | Chaque paramètre annoté, annotation supportée, retour annoté, `Patch`/`Delete` paramétrés | `TypeError` |
-| `check` (démarrage de `run`) | Chaque type lu ou touché est fourni par le `Store` initial ou par une étape amont | `LookupError` |
-| par étape, avant application | Contrat de sortie respecté ; cibles de `Patch`/`Delete` présentes et non ambiguës ; champs de `Patch` existants | `TypeError` / `KeyError` / `ValueError` |
-| à l'application | Validation pydantic de chaque objet et de chaque champ écrit | `ValidationError` |
+| `@module` (import) | Every parameter annotated, supported annotation, return annotated, `Patch`/`Delete` parameterized | `TypeError` |
+| `check` (start of `run`) | Every type read or touched is provided by the initial `Store` or by an upstream step | `LookupError` |
+| per step, before applying | Output contract honored; `Patch`/`Delete` targets present and unambiguous; `Patch` fields exist | `TypeError` / `KeyError` / `ValueError` |
+| on apply | pydantic validation of every object and every written field | `ValidationError` |
 
-`check` simule le pipeline sur les **types** : il part de `store.types()` et ajoute après chaque étape
-les types qu'elle produit. Un module qui lit `Trade` alors qu'aucune étape amont n'en produit et que le
-`Store` n'en contient pas échoue en une milliseconde, pas après trois heures de calcul.
+`check` simulates the pipeline on **types**: it starts from `store.types()` and adds, after each step, the
+types it produces. A module reading `Trade` when no upstream step produces it and the `Store` doesn't
+contain it fails in a millisecond, not after three hours of computation.
 
-## Sémantique d'application
+## Application semantics
 
-- Les sorties d'une étape sont **collectées, validées, puis appliquées**. Une étape ne s'applique pas à moitié.
-- Ordre d'application = ordre du retour. `put` puis `Delete` sur le même objet laisse l'objet supprimé.
-- `put` sur un `(type, name)` existant **remplace** l'objet. Les mises à jour partielles passent par `Patch`.
-- Le `Store` est muté en place. Pour un run non destructif : `pipeline.run(copy.deepcopy(store))`.
+- A step's outputs are **collected, validated, then applied**. A step never applies halfway.
+- Application order = return order. `put` then `Delete` on the same object leaves it deleted.
+- `put` on an existing `(type, name)` **replaces** the object. Partial updates go through `Patch`.
+- The `Store` is mutated in place. For a non-destructive run: `pipeline.run(copy.deepcopy(store))`.

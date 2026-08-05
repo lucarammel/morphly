@@ -8,9 +8,9 @@ repo_name = "lucarammel/morph"
 docs_dir = "docs"
 
 nav = [
-  { "Accueil" = "index.md" },
+  { "Home" = "index.md" },
   { "Concepts" = "concepts.md" },
-  { "Modules et pipelines" = "modules-and-pipelines.md" },
+  { "Modules and pipelines" = "modules-and-pipelines.md" },
   { "Validation" = "validation.md" },
-  { "Non-objectifs" = "non-goals.md" },
+  { "Non-goals" = "non-goals.md" },
 ]

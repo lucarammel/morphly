@@ -88,7 +88,7 @@ Une seule dépendance : `pydantic>=2.9`. Python ≥ 3.13.
 | **`Pipeline`** | Une liste ordonnée d'étapes, validée avant d'être exécutée. |
 
 Détails, règles de validation, non-objectifs et plan d'adoption : **[SPEC.md](SPEC.md)**, ou la
-[documentation en ligne](https://lucarammel.github.io/morph/).
+[documentation en ligne](https://lucarammel.github.io/morph/) (en anglais).
 
 ## Développement
 
@@ -98,7 +98,7 @@ uv run pytest --cov=morph     # tests + couverture
 uv run ruff check morph tests # lint
 uv run ruff format morph tests
 uv run ty check                # typage
-uv run --group docs zensical serve  # doc en local sur localhost:8000
+uv run --group docs zensical serve  # doc en local sur localhost:8000 (contenu en anglais)
 ```
 
 ## Licence
