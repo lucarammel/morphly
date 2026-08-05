@@ -1,13 +1,12 @@
-# Politique de sécurité
+# Security Policy
 
-## Signaler une vulnérabilité
+## Reporting a vulnerability
 
-Merci de ne **pas** ouvrir d'issue publique pour une vulnérabilité de sécurité. Utilisez plutôt l'onglet
-[Security de GitHub](https://github.com/lucarammel/morph/security/advisories/new) pour signaler
-en privé.
+Please do **not** open a public issue for a security vulnerability. Instead, use GitHub's
+[Security tab](https://github.com/lucarammel/morph/security/advisories/new) to report it privately.
 
-Vous pouvez attendre un premier retour sous une semaine.
+You can expect a first response within a week.
 
-## Versions supportées
+## Supported versions
 
-`morph` est en version `0.x` : seule la dernière version publiée reçoit des correctifs de sécurité.
+`morph` is at `0.x`: only the latest published version receives security fixes.

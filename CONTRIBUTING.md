@@ -1,4 +1,4 @@
-# Contribuer à morph
+# Contributing to morph
 
 ## Setup
 
@@ -6,36 +6,36 @@
 uv sync
 ```
 
-## Avant de proposer une PR
+## Before opening a PR
 
 ```bash
-uv run pytest --cov=morph      # tests + couverture
+uv run pytest --cov=morph      # tests + coverage
 uv run ruff check morph tests  # lint
 uv run ruff format morph tests # format
-uv run ty check                 # typage
+uv run ty check                 # typecheck
 ```
 
-Les trois checks (lint, typecheck, test) tournent en CI sur chaque pull request — ils doivent passer en
-local avant de pousser.
+All three checks (lint, typecheck, test) run in CI on every pull request — they must pass locally before
+pushing.
 
-## Convention de commit
+## Commit convention
 
-Un commit = un changement logique, message à l'impératif décrivant le *pourquoi* plutôt que le *quoi*
-(le diff montre déjà le quoi).
+One commit = one logical change, imperative-mood message describing *why* rather than *what* (the diff
+already shows the what).
 
-## Process de PR
+## PR process
 
-1. Une branche par changement, depuis `main`.
-2. La CI (lint/typecheck/test) doit être verte.
-3. Une review avant merge.
+1. One branch per change, off `main`.
+2. CI (lint/typecheck/test) must be green.
+3. One review before merge.
 
 ## Documentation
 
-Le site de doc (`docs/`) est construit avec [zensical](https://zensical.org) :
+The docs site (`docs/`) is built with [zensical](https://zensical.org):
 
 ```bash
-uv run --group docs zensical serve   # aperçu local sur localhost:8000
+uv run --group docs zensical serve   # local preview on localhost:8000
 ```
 
-`SPEC.md`, à la racine, est la spécification complète du projet — plus détaillée que le site de doc, elle
-inclut aussi le plan d'adoption interne.
+`SPEC.md`, at the repo root, is the full project specification — more detailed than the docs site, and it
+also includes the internal adoption plan.
