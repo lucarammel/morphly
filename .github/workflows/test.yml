@@ -12,8 +12,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
       - run: uv sync
       - run: uv run pytest --cov=morph --cov-report=term-missing
       - name: Generate coverage badge
@@ -25,7 +25,7 @@ jobs:
           fi
           curl -s "https://img.shields.io/badge/coverage-${COV}%25-${COLOR}" -o coverage.svg
       - if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "chore: update coverage badge"
           file_pattern: coverage.svg
