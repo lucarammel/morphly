@@ -1,0 +1,39 @@
+name: Bug report
+description: Signaler un comportement inattendu
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Qu'est-ce qui ne marche pas ?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Un extrait de code minimal qui reproduit le problème.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportement attendu
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version de morph
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Version de Python
+      placeholder: "3.13"
+    validations:
+      required: true
