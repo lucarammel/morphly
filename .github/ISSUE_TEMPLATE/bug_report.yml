@@ -1,39 +1,39 @@
 name: Bug report
-description: Signaler un comportement inattendu
+description: Report unexpected behavior
 labels: ["bug"]
 body:
   - type: textarea
     id: description
     attributes:
       label: Description
-      description: Qu'est-ce qui ne marche pas ?
+      description: What's broken?
     validations:
       required: true
   - type: textarea
     id: repro
     attributes:
       label: Reproduction
-      description: Un extrait de code minimal qui reproduit le problème.
+      description: A minimal code snippet that reproduces the issue.
       render: python
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
-      label: Comportement attendu
+      label: Expected behavior
     validations:
       required: true
   - type: input
     id: version
     attributes:
-      label: Version de morph
+      label: morph version
       placeholder: "0.1.0"
     validations:
       required: true
   - type: input
     id: python
     attributes:
-      label: Version de Python
+      label: Python version
       placeholder: "3.13"
     validations:
       required: true

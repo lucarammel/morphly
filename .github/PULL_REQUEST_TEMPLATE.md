@@ -1,13 +1,13 @@
-## Pourquoi
+## Why
 
-<!-- Le problème ou le besoin, pas juste la description du diff. -->
+<!-- The problem or need, not just a description of the diff. -->
 
-## Changements
+## Changes
 
-<!-- Liste courte des changements. -->
+<!-- Short list of changes. -->
 
 ## Checklist
 
-- [ ] `uv run pytest --cov=morph` passe
-- [ ] `uv run ruff check morph tests` et `uv run ruff format --check morph tests` passent
-- [ ] `uv run ty check` passe
+- [ ] `uv run pytest --cov=morph` passes
+- [ ] `uv run ruff check morph tests` and `uv run ruff format --check morph tests` pass
+- [ ] `uv run ty check` passes

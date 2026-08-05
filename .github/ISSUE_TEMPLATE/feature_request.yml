@@ -1,23 +1,23 @@
 name: Feature request
-description: Proposer une évolution
+description: Propose an improvement
 labels: ["enhancement"]
 body:
   - type: textarea
     id: problem
     attributes:
-      label: Problème
-      description: Quel problème concret cette évolution résout-elle ?
+      label: Problem
+      description: What concrete problem does this solve?
     validations:
       required: true
   - type: textarea
     id: proposal
     attributes:
-      label: Proposition
-      description: À quoi ça pourrait ressembler (API, comportement) ?
+      label: Proposal
+      description: What could this look like (API, behavior)?
     validations:
       required: true
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternatives envisagées
-      description: Solutions de contournement déjà essayées, s'il y en a.
+      label: Alternatives considered
+      description: Workarounds already tried, if any.
