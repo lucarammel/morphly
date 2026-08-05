@@ -7,3 +7,4 @@ dist/
 .ruff_cache/
 .coverage
 uv.lock
+.claude/
