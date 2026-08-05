@@ -29,6 +29,9 @@ dev = [
     "ruff>=0.9",
     "ty>=0.0.66",
 ]
+docs = [
+    "zensical>=0.0.53",
+]
 
 [build-system]
 requires = ["hatchling"]

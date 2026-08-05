@@ -8,3 +8,4 @@ dist/
 .coverage
 uv.lock
 .claude/
+site/

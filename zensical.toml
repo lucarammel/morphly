@@ -1,0 +1,16 @@
+[project]
+site_name = "morph"
+site_url = "https://lucarammel.github.io/morph/"
+site_description = "Typed pipelines over a shared set of pydantic business objects"
+site_author = "Lucas Pereira"
+repo_url = "https://github.com/lucarammel/morph"
+repo_name = "lucarammel/morph"
+docs_dir = "docs"
+
+nav = [
+  { "Accueil" = "index.md" },
+  { "Concepts" = "concepts.md" },
+  { "Modules et pipelines" = "modules-and-pipelines.md" },
+  { "Validation" = "validation.md" },
+  { "Non-objectifs" = "non-goals.md" },
+]
