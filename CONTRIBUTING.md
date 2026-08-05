@@ -36,6 +36,3 @@ The docs site (`docs/`) is built with [zensical](https://zensical.org):
 ```bash
 uv run --group docs zensical serve   # local preview on localhost:8000
 ```
-
-`SPEC.md`, at the repo root, is the full project specification — more detailed than the docs site, and it
-also includes the internal adoption plan.

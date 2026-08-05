@@ -9,7 +9,7 @@
 [![python](https://img.shields.io/badge/python-3.13%2B-blue)](https://www.python.org/)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-[Spécification complète](SPEC.md) · [Exemple](#exemple) · [Installation](#installation) · [Concepts](#concepts)
+ [Exemple](#exemple) · [Installation](#installation) · [Concepts](#concepts)
 
 </div>
 
@@ -87,8 +87,6 @@ Une seule dépendance : `pydantic>=2.9`. Python ≥ 3.13.
 | **`@module`** | Une fonction annotée devient un module : ses annotations sont son contrat. |
 | **`Pipeline`** | Une liste ordonnée d'étapes, validée avant d'être exécutée. |
 
-Détails, règles de validation, non-objectifs et plan d'adoption : **[SPEC.md](SPEC.md)**, ou la
-[documentation en ligne](https://lucarammel.github.io/morph/) (en anglais).
 
 ## Développement
 

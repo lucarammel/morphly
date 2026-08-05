@@ -4,45 +4,130 @@ title: morph
 
 # morph
 
-`morph` orchestrates **independent modules** that share a **common set of business objects**. Each module
-reads the subset of objects it needs, and declares what it changes.
+`morph` chains **independent modules** over a **shared set of business objects**. A module is one
+annotated function: its signature declares what it reads, what it creates, and what it changes.
+
+```python
+@module
+def withhold(employees: list[Employee], policy: PayrollPolicy) -> list[Payslip]:
+    ...
+```
+
+That signature is the whole contract. There is no base class to inherit from, no registry to keep in sync,
+and no `get_objects_used()` to write by hand and forget to update.
 
 One dependency: `pydantic`. Python ≥ 3.13.
 
-## Example
+## In one example
+
+Running payroll: hours become gross pay, managers get a bonus, gross becomes a payslip, timesheets are
+archived. Four teams could own those four steps and never talk to each other.
 
 ```python
-from morph import Config, Delete, Entity, Patch, Pipeline, Step, Store, module
+from morph import Config, Delete, Entity, Patch, Pipeline, Store, module
 
-class Plant(Entity):
-    pmax: float
-    cost: float
-    cleared: float = 0.0
 
-class Order(Entity):
-    volume: float
-    price: float
+class Employee(Entity):
+    hourly_rate: float
+    contract_hours: float = 35.0
+    gross: float = 0.0
 
-class BidParams(Config):
-    margin: float = 1.0
+
+class Manager(Employee):
+    bonus_target: float
+
+
+class Timesheet(Entity):
+    employee: str
+    hours: float
+
+
+class Payslip(Entity):
+    employee: str
+    gross: float
+    withheld: float
+    net: float
+
+
+class PayrollPolicy(Config):
+    overtime_after: float = 35.0
+    overtime_rate: float = 1.25
+    social_rate: float = 0.22
+
 
 @module
-def bidding(plants: list[Plant], params: BidParams) -> list[Order]:
-    return [Order(name=f"o_{p.name}", volume=p.pmax, price=p.cost * params.margin) for p in plants]
+def compute_gross(
+    employees: list[Employee],
+    sheets: list[Timesheet],
+    policy: PayrollPolicy,
+) -> list[Patch[Employee]]:
+    worked: dict[str, float] = {}
+    for s in sheets:
+        worked[s.employee] = worked.get(s.employee, 0.0) + s.hours
+    patches = []
+    for e in employees:
+        hours = worked.get(e.name, 0.0)
+        overtime = max(0.0, hours - policy.overtime_after)
+        paid = (hours - overtime) + overtime * policy.overtime_rate
+        patches.append(Patch(e, gross=e.hourly_rate * paid))
+    return patches
+
 
 @module
-def clearing(orders: list[Order], plants: list[Plant]) -> list[Patch[Plant] | Delete[Order]]:
-    by_order = {f"o_{p.name}": p for p in plants}
+def add_bonus(managers: list[Manager]) -> list[Patch[Manager]]:
+    return [Patch(m, gross=m.gross * (1 + m.bonus_target)) for m in managers]
+
+
+@module
+def withhold(employees: list[Employee], policy: PayrollPolicy) -> list[Payslip]:
     return [
-        Patch(by_order[o.name], cleared=o.volume) if o.price < 30 else Delete(o)
-        for o in orders
+        Payslip(
+            name=f"slip-{e.name}",
+            employee=e.name,
+            gross=e.gross,
+            withheld=e.gross * policy.social_rate,
+            net=e.gross * (1 - policy.social_rate),
+        )
+        for e in employees
     ]
 
-store = Store(Plant(name="a", pmax=100, cost=10), Plant(name="b", pmax=50, cost=40))
-Pipeline(Step(bidding, BidParams(margin=1.2)), clearing).run(store)
+
+@module
+def archive(sheets: list[Timesheet]) -> list[Delete[Timesheet]]:
+    return [Delete(s) for s in sheets]
+
+
+store = Store(
+    Employee(name="ada", hourly_rate=50.0),
+    Manager(name="bob", hourly_rate=60.0, bonus_target=0.10),
+    Timesheet(name="ada-w1", employee="ada", hours=38.0),
+    Timesheet(name="bob-w1", employee="bob", hours=35.0),
+    PayrollPolicy(),
+)
+
+Pipeline(compute_gross, add_bonus, withhold, archive).run(store)
+
+store.find(Employee, "ada").gross  # 1937.50 — 35h + 3h of overtime at 1.25
+store.find(Manager, "bob").gross  # 2310.00 — 35h, then +10% bonus
+store.all(Payslip)  # [Payslip(name='slip-ada'), Payslip(name='slip-bob')]
+store.all(Timesheet)  # []
 ```
 
-## Problem
+Four things are worth noticing in that snippet, and they are the whole design:
+
+- **The type is the key.** `compute_gross` asks for `list[Employee]` and gets `bob` too, because `Manager`
+  is an `Employee`. Nothing was registered anywhere to make that work.
+- **The signature is the contract.** `-> list[Payslip]` says *creates*, `-> list[Patch[Employee]]` says
+  *updates*, `-> list[Delete[Timesheet]]` says *deletes*. Returning anything else is an error.
+- **Nothing runs before the chain is checked.** Put `archive` before `compute_gross` and it still works;
+  put a step reading `Payslip` before `withhold` and the pipeline refuses to start, in a millisecond.
+- **Modules are isolated.** They receive copies. `compute_gross` could scribble all over its `employees`
+  list and the store would not notice — only the returned `Patch` values are applied.
+
+New to the library? Start with [Getting started](getting-started.md), which builds this pipeline one step
+at a time.
+
+## The problem it solves
 
 Chaining N computation modules over shared business state, with:
 
@@ -71,5 +156,14 @@ Hand-rolled orchestrators all converge on the same flaws, which `morph` refuses 
 4. **Fail before computing.** An inconsistent chain is a startup error.
 5. **Zero ceremony.** No base class to inherit from to write a module.
 
-For the full concepts and validation rules, see [Concepts](concepts.md),
-[Modules and pipelines](modules-and-pipelines.md) and [Validation](validation.md).
+## Where to go next
+
+| Page | For |
+|---|---|
+| [Getting started](getting-started.md) | Building the payroll pipeline from scratch, one step at a time. |
+| [Concepts](concepts.md) | `Entity`, `Config`, `Store`, `Patch`, `Delete`, `view`. |
+| [Modules and pipelines](modules-and-pipelines.md) | The injection and output rules, in full. |
+| [Validation](validation.md) | What is checked, when, and which exception you get. |
+| [Recipes](recipes.md) | Same module twice, unit-testing a module, snapshots, observability. |
+| [API reference](reference.md) | Every public symbol, generated from the source. |
+| [Non-goals](non-goals.md) | What is deliberately absent, and what would justify adding it. |

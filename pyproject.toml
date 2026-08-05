@@ -32,6 +32,7 @@ dev = [
     "ty>=0.0.66",
 ]
 docs = [
+    "mkdocstrings[python]>=0.27",
     "zensical>=0.0.53",
 ]
 

@@ -25,9 +25,33 @@ def _nodes(annotation: Any) -> Iterator[Any]:
 class Module:
     """A function whose annotations declare what it reads, creates and touches.
 
-    ``list[X]`` (X: Entity) -> every instance of X
-    ``X`` (X: Config)       -> the step config, else the store singleton
-    return                  -> Entity/Config to upsert, Patch/Delete to apply
+    Built by the [`@module`][morph.module] decorator; you rarely instantiate it
+    yourself. The annotations are parsed once, at import time, and an unsupported or
+    missing one fails there rather than mid-run.
+
+    | Annotation | Injected |
+    | --- | --- |
+    | `list[X]`, `X: Entity` | `store.all(X)`, subclasses included |
+    | `X`, `X: Config` | the step's config, else `store.one(X)` |
+
+    The return annotation forms the output contract: `Entity` and `Config` types are
+    *produced*, types inside `Patch[...]` and `Delete[...]` are *touched*, and `None`
+    means the module writes nothing.
+
+    Args:
+        fn: The annotated function to wrap.
+
+    Attributes:
+        fn: The wrapped function.
+        name: The function's name, used as the default step name.
+        reads: One `(parameter, is_collection, type)` triple per parameter.
+        produces: Entity and config types the module creates or replaces.
+        touches: Entity types the module patches or deletes.
+
+    Raises:
+        TypeError: If a parameter is unannotated, if an annotation is not
+            `list[Entity subclass]` or a `Config` subclass, if the return is
+            unannotated, or if `Patch`/`Delete` is used without a type parameter.
     """
 
     def __init__(self, fn: Callable[..., Any]):
@@ -70,7 +94,27 @@ class Module:
         return produces, touches
 
     def __call__(self, store: Store, configs: tuple[Config, ...] = (), copy_inputs: bool = True) -> list[_Op]:
-        """Run the function, returning its operations without applying them."""
+        """Run the function, returning its operations without applying them.
+
+        Useful on its own to unit-test a module: build a `Store`, call the module, and
+        assert on the operations it returns — nothing is written.
+
+        Args:
+            store: The state to read from.
+            configs: Configs bound to this step, tried before `store.one`.
+            copy_inputs: Deep-copy every injected value, so the module cannot corrupt
+                the state read by another one. Turn off only when volume demands it.
+
+        Returns:
+            The operations the module returned, validated against its contract but not
+            yet applied. Empty if the module returned `None`.
+
+        Raises:
+            TypeError: If the module returned an operation its signature does not
+                declare.
+            LookupError: If a required config is neither bound to the step nor in the
+                store.
+        """
         kwargs: dict[str, Any] = {}
         for param, is_collection, cls in self.reads:
             value: Any = (
@@ -104,7 +148,35 @@ class Module:
 
 
 def module(fn: Callable[..., Any]) -> Module:
-    """Turn an annotated function into a module."""
+    """Turn an annotated function into a module.
+
+    There is no base class to inherit from and nothing to register: the decorator reads
+    the annotations and that is the whole contract. Errors in the contract are raised
+    at import time.
+
+    Args:
+        fn: A function whose parameters are annotated `list[Entity subclass]` or
+            `Config subclass`, and whose return type is annotated.
+
+    Returns:
+        A [`Module`][morph.Module], ready to be dropped into a
+        [`Pipeline`][morph.Pipeline].
+
+    Raises:
+        TypeError: If the signature does not form a valid contract.
+
+    Examples:
+        ```python
+        @module
+        def compute_gross(
+            employees: list[Employee],
+            sheets: list[Timesheet],
+            policy: PayrollPolicy,
+        ) -> list[Patch[Employee]]:
+            hours = {s.employee: s.hours for s in sheets}
+            return [Patch(e, gross=e.hourly_rate * hours.get(e.name, 0.0)) for e in employees]
+        ```
+    """
     return Module(fn)
 
 
@@ -116,7 +188,31 @@ def _config[C: Config](cls: type[C], configs: tuple[Config, ...], store: Store) 
 
 
 class Step:
-    """A module plus the configs bound to that occurrence of it."""
+    """A module plus the configs bound to that occurrence of it.
+
+    Configs live on the step, not on the module, so the same module can appear twice in
+    a pipeline with different parameters. A config bound here wins over the one in the
+    [`Store`][morph.Store].
+
+    Args:
+        module_: A [`Module`][morph.Module], or a plain function wrapped on the fly.
+        *configs: Configs bound to this occurrence.
+        name: Step name for `explain` and `on_step`. Defaults to the function's name,
+            suffixed on collision within a pipeline.
+
+    Attributes:
+        module: The wrapped module.
+        configs: The configs bound to this step.
+        name: The step name.
+
+    Examples:
+        ```python
+        Pipeline(
+            Step(withhold, PayrollPolicy(social_rate=0.22), name="withhold_fr"),
+            Step(withhold, PayrollPolicy(social_rate=0.13), name="withhold_uk"),
+        )
+        ```
+    """
 
     def __init__(self, module_: Module | Callable[..., Any], *configs: Config, name: str | None = None):
         self.module = module_ if isinstance(module_, Module) else Module(module_)
@@ -128,7 +224,29 @@ class Step:
 
 
 class Pipeline:
-    """An ordered list of steps, checked before it runs."""
+    """An ordered list of steps, checked before it runs.
+
+    The order is yours: a pipeline is a list, not a scheduler. What it does guarantee is
+    that an inconsistent order — a step reading a type nobody upstream provides — fails
+    in a millisecond instead of three hours in.
+
+    Args:
+        *steps: [`Step`][morph.Step] instances, modules, or plain functions. A bare
+            module is equivalent to `Step(module)`.
+
+    Attributes:
+        steps: The steps, in order, with duplicate names suffixed (`pay`, `pay_2`).
+
+    Examples:
+        ```python
+        pipeline = Pipeline(
+            Step(compute_gross, PayrollPolicy(overtime_after=35.0)),
+            withhold,
+            archive_timesheets,
+        )
+        pipeline.run(store)
+        ```
+    """
 
     def __init__(self, *steps: Step | Module | Callable[..., Any]):
         self.steps = [s if isinstance(s, Step) else Step(s) for s in steps]
@@ -143,7 +261,21 @@ class Pipeline:
                 step.name = f"{step.name}_{count + 1}"
 
     def check(self, store: Store) -> None:
-        """Validate the chaining on types only, without running anything."""
+        """Validate the chaining on types only, without running anything.
+
+        Replays the pipeline on types: it starts from `store.types()` and adds, after
+        each step, the types that step produces. A step reading or touching a type that
+        is neither in the initial store nor produced upstream is an error.
+
+        Called automatically by [`run`][morph.Pipeline.run]; call it yourself to fail at
+        startup, before loading any data.
+
+        Args:
+            store: The state the pipeline would run on. Only its types are read.
+
+        Raises:
+            LookupError: If a step reads or touches a type nobody provides.
+        """
         available = store.types()
         for step in self.steps:
             needed = [(f"reads {c.__name__}", c) for _, _, c in step.module.reads if _entity(c)]
@@ -162,7 +294,31 @@ class Pipeline:
         copy_inputs: bool = True,
         on_step: Callable[[Step, Store], None] | None = None,
     ) -> Store:
-        """Check, then run every step in order and apply its output. Mutates and returns ``store``."""
+        """Check, then run every step in order and apply its output.
+
+        A step's operations are collected and validated before any of them is written,
+        so a step never applies halfway. The pipeline as a whole is not transactional:
+        for a non-destructive run, pass `copy.deepcopy(store)`.
+
+        Args:
+            store: The state to run on. **Mutated in place.**
+            copy_inputs: Deep-copy the values injected into each module. Turning this
+                off drops the isolation guarantee — a module mutating an input then
+                affects the shared state.
+            on_step: Called as `on_step(step, store)` after each step is applied. The
+                hook for logs, metrics, snapshots and writing intermediate outputs.
+
+        Returns:
+            The same `store`, mutated.
+
+        Raises:
+            LookupError: If [`check`][morph.Pipeline.check] fails, or a config is
+                missing.
+            TypeError: If a module returns an operation it did not declare.
+            KeyError: If a `Patch` or `Delete` target is missing or ambiguous.
+            ValueError: If a `Patch` names a field the target does not have.
+            pydantic.ValidationError: If a written value does not validate.
+        """
         self.check(store)
         for step in self.steps:
             ops = step.module(store, step.configs, copy_inputs)
@@ -172,7 +328,19 @@ class Pipeline:
         return store
 
     def explain(self) -> str:
-        """One line per step: reads(), then produced and ~touched types."""
+        """One line per step: reads(), then produced and ~touched types.
+
+        Returns:
+            A rendering of the pipeline's dataflow, for logs and reviews. Touched types
+            are prefixed with `~`.
+
+        Examples:
+            ```text
+            1. compute_gross: compute_gross(Employee[], Timesheet[], PayrollPolicy) -> ~Employee
+            2. withhold: withhold(Employee[], PayrollPolicy) -> Payslip
+            3. archive: archive(Timesheet[]) -> ~Timesheet
+            ```
+        """
         return "\n".join(f"{i}. {s!r}" for i, s in enumerate(self.steps, 1))
 
     def __repr__(self) -> str:
