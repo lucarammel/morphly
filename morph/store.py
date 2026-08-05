@@ -100,18 +100,18 @@ class Store:
 
     def all[E: Entity](self, cls: type[E]) -> list[E]:
         """Every instance of ``cls`` and of its subclasses."""
-        return [obj for t, b in self._buckets.items() if issubclass(t, cls) for obj in b.values()]  # type: ignore[misc]
+        return [obj for t, b in self._buckets.items() if issubclass(t, cls) for obj in b.values()]  # ty: ignore[invalid-return-type]
 
     def one[C: Config](self, cls: type[C]) -> C:
         """The single instance of config ``cls``."""
         hits = [c for t, c in self._configs.items() if issubclass(t, cls)]
         if len(hits) != 1:
             raise LookupError(f"expected exactly 1 {cls.__name__} in the store, found {len(hits)}")
-        return hits[0]  # type: ignore[return-value]
+        return hits[0]  # ty: ignore[invalid-return-type]
 
     def find[E: Entity](self, cls: type[E], name: str) -> E:
         """The object named ``name``: exact type first, then the lineage of ``cls``."""
-        return self._locate(cls, name)[1]  # type: ignore[return-value]
+        return self._locate(cls, name)[1]  # ty: ignore[invalid-return-type]
 
     def drop(self, target: Entity) -> None:
         """Remove the stored object matching ``target``."""

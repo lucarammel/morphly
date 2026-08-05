@@ -104,7 +104,8 @@ def test_check_rejects_touching_a_type_nobody_provides():
         pass
 
     @module
-    def haunt() -> list[Patch[Ghost]]: ...
+    def haunt() -> list[Patch[Ghost]]:
+        raise NotImplementedError
 
     with pytest.raises(LookupError, match="touches Ghost"):
         Pipeline(haunt).check(Store())
@@ -122,7 +123,7 @@ def test_inputs_are_isolated(store: Store):
 def test_undeclared_output_is_rejected(store: Store):
     @module
     def liar(plants: list[Plant]) -> list[Order]:
-        return [Plant(name="ghost", pmax=1, cost=1)]  # type: ignore[list-item]
+        return [Plant(name="ghost", pmax=1, cost=1)]  # ty: ignore[invalid-return-type]
 
     with pytest.raises(TypeError, match="not in its return type"):
         Pipeline(liar).run(store)
@@ -185,7 +186,7 @@ def test_deepcopy_is_the_snapshot(store: Store):
 
 def test_declaration_errors():
     with pytest.raises(TypeError, match="must be annotated"):
-        module(lambda plants: None)  # type: ignore[misc, arg-type]
+        module(lambda plants: None)
 
     with pytest.raises(TypeError, match="return type must be annotated"):
 
@@ -205,7 +206,8 @@ def test_declaration_errors():
     with pytest.raises(TypeError, match=r"Patch\[YourEntity\]"):
 
         @module
-        def bare_patch(plants: list[Plant]) -> list[Patch]: ...
+        def bare_patch(plants: list[Plant]) -> list[Patch]:
+            raise NotImplementedError
 
 
 def test_exact_type_wins_over_lineage():
@@ -231,4 +233,4 @@ def test_explain(store: Store):
 
 def test_put_rejects_foreign_objects():
     with pytest.raises(TypeError, match="neither an Entity nor a Config"):
-        Store("nope")  # type: ignore[arg-type]
+        Store("nope")  # ty: ignore[invalid-argument-type]

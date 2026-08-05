@@ -32,7 +32,7 @@ class Module:
 
     def __init__(self, fn: Callable[..., Any]):
         self.fn = fn
-        self.name = fn.__name__
+        self.name = getattr(fn, "__name__", type(fn).__name__)
         hints = typing.get_type_hints(fn)
         self.reads: list[tuple[str, bool, type]] = []
         for param in inspect.signature(fn).parameters:
@@ -73,7 +73,11 @@ class Module:
         """Run the function, returning its operations without applying them."""
         kwargs: dict[str, Any] = {}
         for param, is_collection, cls in self.reads:
-            value: Any = store.all(cls) if is_collection else _config(cls, configs, store)
+            value: Any = (
+                store.all(cls)  # ty: ignore[invalid-argument-type]
+                if is_collection
+                else _config(cls, configs, store)  # ty: ignore[invalid-argument-type]
+            )
             kwargs[param] = copy.deepcopy(value) if copy_inputs else value
         result = self.fn(**kwargs)
         if result is None:
@@ -189,16 +193,18 @@ def _apply(ops: Iterable[_Op], store: Store, touches: list[type]) -> None:
     for op in ops:
         if isinstance(op, (Patch, Delete)):
             declared = next(t for t in touches if isinstance(op.target, t))
-            obj: Entity = store.find(declared, op.target.name)
+            obj: Entity = store.find(declared, op.target.name)  # ty: ignore[invalid-argument-type]
             if isinstance(op, Patch):
                 check_fields(obj, op.fields)
             resolved.append((op, obj))
         else:
             resolved.append((op, None))
     for op, stored in resolved:
-        if isinstance(op, Delete) and stored is not None:
+        if isinstance(op, Delete):
+            assert stored is not None
             store.drop(stored)
-        elif isinstance(op, Patch) and stored is not None:
+        elif isinstance(op, Patch):
+            assert stored is not None
             store.patch(stored, op.fields)
-        else:
-            store.put(op)  # type: ignore[arg-type]
+        elif isinstance(op, (Entity, Config)):
+            store.put(op)

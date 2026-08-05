@@ -1,5 +1,10 @@
 # morph
 
+![CI](https://github.com/lucarammel/morph/actions/workflows/ci.yml/badge.svg)
+![coverage](./coverage.svg)
+![python](https://img.shields.io/badge/python-3.13%2B-blue)
+![license](https://img.shields.io/badge/license-MIT-green)
+
 Des modules indépendants, un jeu d'objets métier partagé, un contrat lisible dans la signature.
 
 ```python
