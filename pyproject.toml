@@ -5,7 +5,22 @@ description = "Typed pipelines over a shared set of pydantic business objects"
 readme = "README.md"
 requires-python = ">=3.13"
 license = "MIT"
+authors = [{ name = "Lucas Pereira", email = "lucaspereira0497@gmail.com" }]
+keywords = ["pipeline", "pydantic", "orchestration", "typed", "workflow"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
 dependencies = ["pydantic>=2.9"]
+
+[project.urls]
+Homepage = "https://github.com/lucarammel/morph"
+Repository = "https://github.com/lucarammel/morph"
+Issues = "https://github.com/lucarammel/morph/issues"
 
 [dependency-groups]
 dev = [
