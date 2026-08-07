@@ -43,13 +43,6 @@ Being explicit about the limits is more useful than overselling the guarantee.
 check — both types are in the store from the start — and quietly applies a bonus to a `gross` of zero.
 `check` reasons about availability, not about freshness. Ordering your steps is still your job.
 
-**A missing `Config`.** Only entity types are checked. A module reading a `PayrollPolicy` that is neither
-bound to its step nor present in the store gets through `check` and fails when the step runs:
-
-```text
-LookupError: expected exactly 1 PayrollPolicy in the store, found 0
-```
-
 **Anything about values.** `check` never runs a module. Empty inputs, wrong numbers, an exception in your
 own code — none of it is visible to it.
 

@@ -99,6 +99,21 @@ def test_check_accepts_type_produced_upstream(store: Store):
     Pipeline(bidding, clearing).check(store)  # Order only exists after `bidding`
 
 
+def test_check_rejects_config_neither_bound_nor_in_store():
+    @module
+    def needs_config(plants: list[Plant], params: BidParams) -> None: ...
+
+    with pytest.raises(LookupError, match="BidParams"):
+        Pipeline(needs_config).check(Store(Plant(name="a", pmax=1, cost=1)))
+
+
+def test_check_accepts_config_bound_to_step():
+    @module
+    def needs_config(plants: list[Plant], params: BidParams) -> None: ...
+
+    Pipeline(Step(needs_config, BidParams())).check(Store(Plant(name="a", pmax=1, cost=1)))
+
+
 def test_check_rejects_touching_a_type_nobody_provides():
     class Ghost(Entity):
         pass
