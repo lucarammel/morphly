@@ -1,22 +1,37 @@
 ---
 title: morph
+hide:
+  - navigation
+  - toc
 ---
 
-# morph
+<div class="hero" markdown>
 
-Independent modules over a shared set of business objects. The function signature is the contract.
+# morph<span class="hero-accent">()</span>
+
+Independent modules over a shared set of business objects.
+**The function signature is the contract.**
 
 ```python
 @module
 def withhold(employees: list[Employee], policy: PayrollPolicy) -> list[Payslip]: ...
 ```
 
-- **The type is the key** — no enum, no registry, no name-to-class mapping.
-- **The signature is the contract** — what a module reads, creates, and touches is checked, not just documented.
-- **Fails before it runs** — an inconsistent chain never reaches your data.
+[Get started :lucide-arrow-right:](getting-started.md){ .md-button .md-button--primary }
+[:fontawesome-brands-github: Source](https://github.com/lucarammel/morph){ .md-button }
+
+</div>
+
+<div class="hero-points" markdown>
+
+- **The type is the key** — no enum, no registry.
+- **The signature is the contract** — checked, not just documented.
+- **Fails before it runs** — never reaches your data.
 - **Modules are isolated** — only the return value is applied.
 
-One dependency: `pydantic`. Python ≥ 3.12.
+</div>
+
+<p class="hero-footnote">One dependency: <code>pydantic</code>. Python ≥ 3.12.</p>
 
 ## Where to go next
 

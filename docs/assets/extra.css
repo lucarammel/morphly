@@ -28,6 +28,72 @@
   padding-left: 0.6rem;
 }
 
+/* Homepage hero. */
+.md-typeset .hero {
+  text-align: center;
+  background: radial-gradient(ellipse 70% 100% at 50% 0%, var(--md-accent-fg-color--transparent), transparent 70%);
+  border-radius: 0.8rem;
+  padding: 3rem 1.5rem 2rem;
+  margin: 0 0 2rem;
+}
+
+.md-typeset .hero h1 {
+  font-size: 2.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.md-typeset .hero .hero-accent {
+  color: var(--md-accent-fg-color);
+}
+
+.md-typeset .hero > p {
+  font-size: 1.1rem;
+  color: var(--md-default-fg-color--light);
+  max-width: 32rem;
+  margin: 0 auto 1.6rem;
+}
+
+.md-typeset .hero .highlight {
+  max-width: 30rem;
+  margin: 0 auto 1.8rem;
+  text-align: left;
+  border-radius: 0.5rem;
+  box-shadow: var(--md-shadow-z2);
+  overflow: hidden;
+}
+
+.md-typeset .hero .md-button {
+  margin: 0.25rem;
+}
+
+.md-typeset .hero-points {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+}
+
+.md-typeset .hero-points ul {
+  display: contents;
+}
+
+.md-typeset .hero-points li {
+  list-style: none;
+  background: var(--md-code-bg-color);
+  border: 0.05rem solid var(--md-default-fg-color--lightest);
+  border-radius: 2rem;
+  padding: 0.45rem 1rem;
+  font-size: 0.72rem;
+}
+
+.md-typeset .hero-footnote {
+  text-align: center;
+  color: var(--md-default-fg-color--light);
+  font-size: 0.75rem;
+  margin-bottom: 2.5rem;
+}
+
 /* A tinted badge behind each card's leading icon, echoing the accent parens in the logo. */
 .md-typeset .grid.cards li .twemoji {
   background: var(--md-accent-fg-color--transparent);
