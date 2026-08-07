@@ -8,11 +8,13 @@
 **Independent modules. A shared set of business objects. A contract you can read in the signature.**
 
 [![testing](https://github.com/lucarammel/morph/actions/workflows/test.yml/badge.svg)](https://github.com/lucarammel/morph/actions/workflows/test.yml)
-[![coverage](./coverage.svg)](https://github.com/lucarammel/morph/actions/workflows/ci.yml)
+[![coverage](https://codecov.io/gh/lucarammel/morph/graph/badge.svg)](https://codecov.io/gh/lucarammel/morph)
 [![python](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
- [Example](#example) · [Installation](#installation) · [Concepts](#concepts)
+> **Status**: under active development — no stable release yet.
+
+ [Exemple](#exemple) · [Installation](#installation) · [Concepts](#concepts)
 
 </div>
 
@@ -23,29 +25,32 @@
 ```python
 from morph import Config, Delete, Entity, Patch, Pipeline, Step, Store, module
 
+
 class Plant(Entity):
     pmax: float
     cost: float
     cleared: float = 0.0
 
+
 class Order(Entity):
     volume: float
     price: float
 
+
 class BidParams(Config):
     margin: float = 1.0
+
 
 @module
 def bidding(plants: list[Plant], params: BidParams) -> list[Order]:
     return [Order(name=f"o_{p.name}", volume=p.pmax, price=p.cost * params.margin) for p in plants]
 
+
 @module
 def clearing(orders: list[Order], plants: list[Plant]) -> list[Patch[Plant] | Delete[Order]]:
     by_order = {f"o_{p.name}": p for p in plants}
-    return [
-        Patch(by_order[o.name], cleared=o.volume) if o.price < 30 else Delete(o)
-        for o in orders
-    ]
+    return [Patch(by_order[o.name], cleared=o.volume) if o.price < 30 else Delete(o) for o in orders]
+
 
 store = Store(Plant(name="a", pmax=100, cost=10), Plant(name="b", pmax=50, cost=40))
 Pipeline(Step(bidding, BidParams(margin=1.2)), clearing).run(store)
@@ -76,8 +81,6 @@ Hand-rolled orchestrators all converge on the same flaws. `morph` refuses them b
 ```bash
 uv add git+https://github.com/lucarammel/morph
 ```
-
-One dependency: `pydantic>=2.9`. Python ≥ 3.12.
 
 ## Concepts
 

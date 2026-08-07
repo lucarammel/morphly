@@ -1,0 +1,103 @@
+/* Brand palette — matches the README wordmark (assets/logo-*.svg). */
+:root,
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #6c63ff;
+  --md-primary-fg-color--light: #8b84ff;
+  --md-primary-fg-color--dark: #4a41d6;
+  --md-accent-fg-color: #6c63ff;
+  --md-accent-fg-color--transparent: #6c63ff1a;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #8b84ff;
+  --md-primary-fg-color--light: #a7a1ff;
+  --md-primary-fg-color--dark: #6c63ff;
+  --md-accent-fg-color: #8b84ff;
+  --md-accent-fg-color--transparent: #8b84ff1a;
+}
+
+/* Page titles in the code font, echoing the monospace wordmark. */
+.md-typeset h1 {
+  font-family: var(--md-code-font-family);
+  letter-spacing: -0.02em;
+}
+
+/* A section marker on every h2, so the reading path is visible at a glance. */
+.md-typeset h2 {
+  border-left: 0.25rem solid var(--md-accent-fg-color);
+  padding-left: 0.6rem;
+}
+
+/* Homepage hero. */
+.md-typeset .hero {
+  text-align: center;
+  background: radial-gradient(ellipse 70% 100% at 50% 0%, var(--md-accent-fg-color--transparent), transparent 70%);
+  border-radius: 0.8rem;
+  padding: 3rem 1.5rem 2rem;
+  margin: 0 0 2rem;
+}
+
+.md-typeset .hero h1 {
+  font-size: 2.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.md-typeset .hero .hero-accent {
+  color: var(--md-accent-fg-color);
+}
+
+.md-typeset .hero > p {
+  font-size: 1.1rem;
+  color: var(--md-default-fg-color--light);
+  max-width: 32rem;
+  margin: 0 auto 1.6rem;
+}
+
+.md-typeset .hero-points {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+}
+
+.md-typeset .hero-points ul {
+  display: contents;
+}
+
+.md-typeset .hero-points li {
+  list-style: none;
+  background: var(--md-code-bg-color);
+  border: 0.05rem solid var(--md-default-fg-color--lightest);
+  border-radius: 2rem;
+  padding: 0.45rem 1rem;
+  font-size: 0.72rem;
+}
+
+/* A tinted badge behind each card's leading icon, echoing the accent parens in the logo. */
+.md-typeset .grid.cards li .twemoji {
+  background: var(--md-accent-fg-color--transparent);
+  border-radius: 50%;
+  padding: 0.3em;
+  margin-right: 0.05em;
+}
+
+.md-typeset .grid.cards li .twemoji svg {
+  color: var(--md-accent-fg-color);
+}
+
+/* Brand-tinted "note" admonitions, instead of the default blue. */
+.md-typeset .admonition.note,
+.md-typeset details.note {
+  background-color: var(--md-accent-fg-color--transparent);
+}
+
+.md-typeset .note > .admonition-title::before,
+.md-typeset .note > summary::before {
+  background-color: var(--md-accent-fg-color);
+}
+
+.md-typeset .note > .admonition-title::after,
+.md-typeset .note > summary::after {
+  color: var(--md-accent-fg-color);
+}

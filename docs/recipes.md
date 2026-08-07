@@ -58,9 +58,7 @@ No scenario machinery in the library: a loop over configs is a loop over configs
 
 ```python
 results = {
-    rate: Pipeline(compute_gross, Step(withhold, PayrollPolicy(social_rate=rate))).run(
-        copy.deepcopy(store)
-    )
+    rate: Pipeline(compute_gross, Step(withhold, PayrollPolicy(social_rate=rate))).run(copy.deepcopy(store))
     for rate in (0.20, 0.22, 0.25)
 }
 
@@ -85,9 +83,7 @@ covers progress bars, metrics, and writing intermediate results:
 
 ```python
 def checkpoint(step: Step, ops: list, store: Store) -> None:
-    Path(f"out/{step.name}.json").write_text(
-        json.dumps([s.model_dump() for s in store.all(Payslip)])
-    )
+    Path(f"out/{step.name}.json").write_text(json.dumps([s.model_dump() for s in store.all(Payslip)]))
 
 
 pipeline.run(store, on_step=checkpoint)
