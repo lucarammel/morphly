@@ -174,6 +174,23 @@ pipeline.run(store, copy_inputs=False)
 Modules then receive the stored objects themselves, and mutating an input **does** change the shared
 state. Measure first; the isolation guarantee is worth more than most of what it costs.
 
+## Skip unchanged steps while iterating in a notebook
+
+Editing step 12 and rerunning the whole pipeline recomputes steps 1–11 for nothing if their inputs haven't
+moved. `reuse` skips them:
+
+```python
+store = loaded_store()
+pipeline.run(store)
+
+# ... tweak add_bonus, rerun from scratch ...
+store = loaded_store()
+pipeline.run(store, reuse=pipeline.last_run)  # compute_gross: skipped, add_bonus onward: runs
+```
+
+The cache lives on the `Pipeline` object, in memory, for as long as the process runs. Nothing is persisted
+between processes — see [Snapshot and restore](#snapshot-and-restore) for that.
+
 ## Snapshot and restore
 
 The store is a plain Python object.
