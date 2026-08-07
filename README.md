@@ -85,18 +85,12 @@ Workflow(issue_payslip, withhold_tax).run(store)
 store.find(Payslip, "slip-ada").net  # 1560.0 — 2000 gross, 22% withheld
 ```
 
-Two independent functions, chained into a `Workflow`, over a `Store` neither of them knows about. Reorder
-them, and `check` refuses to run before touching your data — `withhold_tax` reads `Payslip`, which nothing
-has produced yet:
-
-```text
-LookupError: step 'withhold_tax' reads Payslip, which is neither in the store nor produced by an upstream step
-```
-
 ## Installation
 
 ```bash
-uv add git+https://github.com/lucarammel/morphly
+uv add morphly  # with uv
+
+pip install morphly  # with pip
 ```
 
 ## How it stacks up
@@ -125,16 +119,7 @@ Hand-rolled orchestrators all converge on the same flaws. `morphly` refuses them
 
 Full walkthrough, the injection/output rules, validation, and recipes: **[lucarammel.github.io/morphly](https://lucarammel.github.io/morphly/)**.
 
-## Development
-
-```bash
-uv sync
-uv run pytest --cov=morphly     # tests + coverage
-uv run ruff check morphly tests # lint
-uv run ruff format morphly tests
-uv run ty check                # type checking
-uv run --group docs zensical serve  # docs locally on localhost:8000
-```
+## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
