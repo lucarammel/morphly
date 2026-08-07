@@ -129,6 +129,12 @@ KeyError: 'bob' is ambiguous in the lineage of Employee: Contractor, Manager
 ```
 Two sibling types hold that name. `morph` refuses to guess — narrow the declared type, or rename.
 
+```text
+ValueError: dp returned a Patch on Plant 'a' which the same step deletes
+```
+A step returned both a `Delete` and another operation on the same target. Application order is return
+order, so the `Patch` would run against an object the step itself already removed. Drop one of the two.
+
 ### At run, from the store
 
 ```text

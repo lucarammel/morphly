@@ -317,13 +317,14 @@ class Pipeline:
                 missing.
             TypeError: If a module returns an operation it did not declare.
             KeyError: If a `Patch` or `Delete` target is missing or ambiguous.
-            ValueError: If a `Patch` names a field the target does not have.
+            ValueError: If a `Patch` names a field the target does not have, or if a
+                step returns an operation on a target it already deleted.
             pydantic.ValidationError: If a written value does not validate.
         """
         self.check(store)
         for step in self.steps:
             ops = step.module(store, step.configs, copy_inputs)
-            _apply(ops, store, step.module.touches)
+            _apply(ops, store, step.module.touches, step.name)
             if on_step:
                 on_step(step, ops, store)
         return store
@@ -387,19 +388,28 @@ def _entity(cls: type) -> bool:
     return issubclass(cls, Entity)
 
 
-def _apply(ops: Iterable[_Op], store: Store, touches: list[type]) -> None:
+def _apply(ops: Iterable[_Op], store: Store, touches: list[type], step_name: str) -> None:
     """Apply a step's operations, after resolving and checking every target.
 
     ``Patch``/``Delete`` targets are resolved against the type declared in the return
     annotation, so a module can hand back an enriched view of a stored object.
     """
     resolved: list[tuple[_Op, Entity | None]] = []
+    deleted: set[tuple[type, str]] = set()
     for op in ops:
         if isinstance(op, (Patch, Delete)):
             declared = next(t for t in touches if isinstance(op.target, t))
+            key = (declared, op.target.name)
+            if key in deleted:
+                raise ValueError(
+                    f"{step_name} returned a {type(op).__name__} on {declared.__name__} {op.target.name!r} "
+                    "which the same step deletes"
+                )
             obj: Entity = store.find(declared, op.target.name)  # ty: ignore[invalid-argument-type]
             if isinstance(op, Patch):
                 check_fields(obj, op.fields)
+            else:
+                deleted.add(key)
             resolved.append((op, obj))
         else:
             resolved.append((op, None))
