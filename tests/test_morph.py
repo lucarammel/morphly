@@ -172,6 +172,17 @@ def test_step_is_atomic(store: Store):
     assert len(store.all(Plant)) == 2
 
 
+def test_delete_then_patch_same_target_is_rejected(store: Store):
+    @module
+    def dp(plants: list[Plant]) -> list[Delete[Plant] | Patch[Plant]]:
+        p = plants[0]
+        return [Delete(p), Patch(p, cleared=9.0)]
+
+    with pytest.raises(ValueError, match="which the same step deletes"):
+        Pipeline(dp).run(store)
+    assert store.find(Plant, "a") is not None
+
+
 def test_on_step_hook(store: Store):
     seen: list[tuple[str, int]] = []
     Pipeline(bidding, clearing).run(store, on_step=lambda s, st: seen.append((s.name, len(st.all(Order)))))
