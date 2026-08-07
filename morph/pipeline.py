@@ -343,6 +343,41 @@ class Pipeline:
         """
         return "\n".join(f"{i}. {s!r}" for i, s in enumerate(self.steps, 1))
 
+    def to_mermaid(self) -> str:
+        """Render the pipeline's dataflow as a Mermaid flowchart.
+
+        Same information as [`explain`][morph.Pipeline.explain], as a graph instead of a
+        line per step: every edge is a `reads`/`produces`/`touches` relationship already
+        present in the modules' signatures, so the graph cannot go stale.
+
+        Returns:
+            A `flowchart LR` block: `Type --> step` for entity reads, `step --> Type`
+            for produced types, `step -.-> Type` for touched types.
+
+        Examples:
+            ```python
+            print(pipeline.to_mermaid())
+            ```
+            ```text
+            flowchart LR
+                Employee --> compute_gross
+                Timesheet --> compute_gross
+                compute_gross -.-> Employee
+                Employee --> withhold
+                withhold --> Payslip
+            ```
+        """
+        edges: dict[str, None] = {}
+        for step in self.steps:
+            for _, _, cls in step.module.reads:
+                if _entity(cls):
+                    edges[f"{cls.__name__} --> {step.name}"] = None
+            for cls in step.module.produces:
+                edges[f"{step.name} --> {cls.__name__}"] = None
+            for cls in step.module.touches:
+                edges[f"{step.name} -.-> {cls.__name__}"] = None
+        return "flowchart LR\n" + "\n".join(f"    {edge}" for edge in edges)
+
     def __repr__(self) -> str:
         return f"Pipeline({', '.join(s.name for s in self.steps)})"
 

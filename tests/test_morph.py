@@ -231,6 +231,18 @@ def test_explain(store: Store):
     )
 
 
+def test_to_mermaid(store: Store):
+    assert Pipeline(bidding, clearing).to_mermaid() == (
+        "flowchart LR\n"
+        "    Plant --> bidding\n"
+        "    bidding --> Order\n"
+        "    Order --> clearing\n"
+        "    Plant --> clearing\n"
+        "    clearing -.-> Plant\n"
+        "    clearing -.-> Order"
+    )
+
+
 def test_put_rejects_foreign_objects():
     with pytest.raises(TypeError, match="neither an Entity nor a Config"):
         Store("nope")  # ty: ignore[invalid-argument-type]

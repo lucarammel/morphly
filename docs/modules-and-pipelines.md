@@ -130,6 +130,7 @@ store when it's genuinely global to the run.
 | `run(store, *, copy_inputs=True, on_step=None)` | `check`, then runs the steps in order. Returns the mutated store. |
 | `check(store)` | Validates the chaining without running anything. |
 | `explain()` | One line per step: reads, produced and `~`touched types. |
+| `to_mermaid()` | The same dataflow as a Mermaid flowchart. |
 
 ### The order is yours
 
@@ -141,6 +142,32 @@ That distinction matters: `check` catches a step reading a type nobody provides.
 step reading a type that exists but hasn't been computed yet — running `add_bonus` before `compute_gross`
 is a silent mistake, because both types are in the store from the start. See
 [what check does not catch](validation.md#what-check-does-not-catch).
+
+### `to_mermaid` — export the graph
+
+`explain()` reads well line by line; `to_mermaid()` renders the same `reads`/`produces`/`touches` edges as
+a graph, for a reviewer who won't open the code:
+
+```python
+print(Pipeline(compute_gross, add_bonus, withhold, archive, report).to_mermaid())
+```
+
+```mermaid
+flowchart LR
+    Employee --> compute_gross
+    Timesheet --> compute_gross
+    compute_gross -.-> Employee
+    Manager --> add_bonus
+    add_bonus -.-> Manager
+    Employee --> withhold
+    withhold --> Payslip
+    Timesheet --> archive
+    archive -.-> Timesheet
+    Payslip --> report
+```
+
+A solid arrow is a read (`Type --> step`) or a production (`step --> Type`); a dashed arrow is a `Patch` or
+`Delete` (`step -.-> Type`). It is generated from the signatures, so it cannot go stale.
 
 ### `on_step` — the observability hook
 
