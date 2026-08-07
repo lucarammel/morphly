@@ -13,11 +13,11 @@ One dependency, `pydantic>=2.9`. Python ≥ 3.12.
 
 ## 1. Describe the business objects
 
-An [`Entity`][morph.Entity] is a shared business object. It's a pydantic model with one thing enforced: a
+An [`Entity`][morphly.Entity] is a shared business object. It's a pydantic model with one thing enforced: a
 frozen `name` that identifies it.
 
 ```python
-from morph import Entity
+from morphly import Entity
 
 
 class Employee(Entity):
@@ -36,11 +36,11 @@ model.
 
 ## 2. Fill a store
 
-The [`Store`][morph.Store] holds the shared state. You build it from your own loading code — a database, a
-CSV, an API — `morph` does not care where the objects come from.
+The [`Store`][morphly.Store] holds the shared state. You build it from your own loading code — a database, a
+CSV, an API — `morphly` does not care where the objects come from.
 
 ```python
-from morph import Store
+from morphly import Store
 
 store = Store(
     Employee(name="ada", hourly_rate=50.0),
@@ -60,7 +60,7 @@ A module is a function with `@module` on it. Annotate the parameters with what y
 return type with what you intend to change.
 
 ```python
-from morph import Patch, module
+from morphly import Patch, module
 
 
 @module
@@ -72,8 +72,8 @@ def compute_gross(employees: list[Employee], sheets: list[Timesheet]) -> list[Pa
 Read that signature as a sentence: *reads every `Employee` and every `Timesheet`, updates some fields on
 `Employee` objects*. That sentence is machine-readable, and it's the only declaration you will write.
 
-A [`Patch`][morph.Patch] writes the fields you name and nothing else. It doesn't modify anything by
-itself — it's an intent handed back to the pipeline.
+A [`Patch`][morphly.Patch] writes the fields you name and nothing else. It doesn't modify anything by
+itself — it's an intent handed back to the workflow.
 
 !!! note "Why not just mutate the employee?"
     You can — the object is right there. It just won't do anything. Modules receive **copies**, and only
@@ -83,22 +83,22 @@ itself — it's an intent handed back to the pipeline.
 ## 4. Run it
 
 ```python
-from morph import Pipeline
+from morphly import Workflow
 
-Pipeline(compute_gross).run(store)
+Workflow(compute_gross).run(store)
 
 store.find(Employee, "ada").gross  # 1900.0
 ```
 
-[`Pipeline.run`][morph.Pipeline.run] mutates the store and returns it. Steps run in the order you gave.
+[`Workflow.run`][morphly.Workflow.run] mutates the store and returns it. Steps run in the order you gave.
 
 ## 5. Move the parameters into a `Config`
 
-Overtime rules don't belong hard-coded in a module. A [`Config`][morph.Config] is a singleton input,
+Overtime rules don't belong hard-coded in a module. A [`Config`][morphly.Config] is a singleton input,
 resolved by type — no `name`, because there's only ever one.
 
 ```python
-from morph import Config
+from morphly import Config
 
 
 class PayrollPolicy(Config):
@@ -129,13 +129,13 @@ Put the policy in the store and it's injected:
 
 ```python
 store.put(PayrollPolicy())
-Pipeline(compute_gross).run(store)
+Workflow(compute_gross).run(store)
 
 store.find(Employee, "ada").gross  # 1937.50 — 35h + 3h at 1.25
 ```
 
 A config can also be bound to one specific step, which is how the same module runs twice with different
-parameters — see [Step](modules-and-pipelines.md#step-per-step-configuration).
+parameters — see [Step](modules-and-workflows.md#step-per-step-configuration).
 
 ## 6. Subclasses come for free
 
@@ -156,7 +156,7 @@ def add_bonus(managers: list[Manager]) -> list[Patch[Manager]]:
 store.put(Manager(name="bob", hourly_rate=60.0, bonus_target=0.10))
 store.put(Timesheet(name="bob-w1", employee="bob", hours=35.0))
 
-Pipeline(compute_gross, add_bonus).run(store)
+Workflow(compute_gross, add_bonus).run(store)
 
 store.find(Manager, "bob").gross  # 2310.00 — 2100 of gross, then +10%
 ```
@@ -166,10 +166,10 @@ store.find(Manager, "bob").gross  # 2310.00 — 2100 of gross, then +10%
 
 ## 7. Create and delete
 
-Returning a full entity **creates or replaces** it. Returning a [`Delete`][morph.Delete] removes it.
+Returning a full entity **creates or replaces** it. Returning a [`Delete`][morphly.Delete] removes it.
 
 ```python
-from morph import Delete
+from morphly import Delete
 
 
 class Payslip(Entity):
@@ -212,7 +212,7 @@ def report(slips: list[Payslip]) -> None:
 ```
 
 Rebuild the store from scratch before the full run — `add_bonus` multiplies `gross`, so replaying it over
-a store that already went through the pipeline would pay `bob` his bonus twice. A run starts from loaded
+a store that already went through the workflow would pay `bob` his bonus twice. A run starts from loaded
 data, not from its own output:
 
 ```python
@@ -227,15 +227,15 @@ def loaded_store() -> Store:
 
 
 store = loaded_store()
-pipeline = Pipeline(compute_gross, add_bonus, withhold, archive, report)
-pipeline.run(store)
+workflow = Workflow(compute_gross, add_bonus, withhold, archive, report)
+workflow.run(store)
 # 2 payslips, net total 3313.05
 ```
 
 Get the order wrong and nothing runs at all:
 
 ```python
-Pipeline(report, withhold).check(loaded_store())
+Workflow(report, withhold).check(loaded_store())
 # LookupError: step 'report' reads Payslip, which is neither in the store
 #              nor produced by an upstream step
 ```
@@ -244,14 +244,14 @@ Note the freshly loaded store in that last call: `check` only asks *which types 
 `store` holds the payslips the run just created — the mistake would slip through. That's the honest limit
 of the check, and it's spelled out in [Validation](validation.md#what-check-does-not-catch).
 
-[`check`][morph.Pipeline.check] replays the pipeline on **types only**, no computation. `run` calls it
-first, so a pipeline that would fail three hours in fails before it starts. You can also call it yourself
+[`check`][morphly.Workflow.check] replays the workflow on **types only**, no computation. `run` calls it
+first, so a workflow that would fail three hours in fails before it starts. You can also call it yourself
 at startup, before loading any data.
 
 ## 9. See what you built
 
 ```python
-print(pipeline.explain())
+print(workflow.explain())
 ```
 
 ```text
@@ -267,8 +267,8 @@ from the signatures, so it can never be out of date.
 
 ## That's the whole library
 
-Six concepts: `Entity`, `Config`, `Store`, `Patch`/`Delete`, `@module`, `Pipeline`.
+Six concepts: `Entity`, `Config`, `Store`, `Patch`/`Delete`, `@module`, `Workflow`.
 
-- The full injection and output rules: [Modules and pipelines](modules-and-pipelines.md).
+- The full injection and output rules: [Modules and workflows](modules-and-workflows.md).
 - Everything that gets checked, and when: [Validation](validation.md).
 - Running a module twice, unit tests, snapshots, logging: [Recipes](recipes.md).

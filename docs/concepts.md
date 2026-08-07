@@ -39,7 +39,7 @@ means a `Patch[Employee]` can legitimately target a `Manager`: the target is res
 type and found anywhere in its lineage.
 
 The one rule this creates: two objects with the same `name` in two **sibling** types are ambiguous, and
-`morph` says so instead of picking one.
+`morphly` says so instead of picking one.
 
 ```python
 store.find(Employee, "bob")
@@ -59,10 +59,10 @@ class PayrollPolicy(Config):
 
 No `name`, because there is only ever one of each type in play. It is resolved by type, first from the
 step it is bound to, then from the `Store` — see
-[Step](modules-and-pipelines.md#step-per-step-configuration).
+[Step](modules-and-workflows.md#step-per-step-configuration).
 
 A `Config` is an ordinary pydantic model, so loading one from a file is a one-liner and needs nothing from
-`morph`:
+`morphly`:
 
 ```python
 PayrollPolicy.model_validate(tomllib.loads(Path("payroll.toml").read_text()))
@@ -120,7 +120,7 @@ Two consequences:
 
 ## `Patch[E]` and `Delete[E]`
 
-Not business objects — **intents**. Returning one changes nothing by itself; the pipeline applies it once
+Not business objects — **intents**. Returning one changes nothing by itself; the workflow applies it once
 the whole step has been validated.
 
 ```python
@@ -164,7 +164,7 @@ replacing a hand-written `model_validate({**dump(obj), ...})` in every module. `
 never stored; the `Patch` still lands on the right `Employee` because the return annotation says
 `Patch[Employee]`.
 
-## `@module` and `Pipeline`
+## `@module` and `Workflow`
 
 The last two, covered in full on their own page:
-[Modules and pipelines](modules-and-pipelines.md).
+[Modules and workflows](modules-and-workflows.md).

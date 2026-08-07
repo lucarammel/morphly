@@ -1,4 +1,4 @@
-"""Pipelines: an ordered list of steps, checked before it runs."""
+"""Workflows: an ordered list of steps, checked before it runs."""
 
 from __future__ import annotations
 
@@ -6,10 +6,10 @@ import copy
 from collections.abc import Callable, Iterable
 from typing import Any
 
-from morph.entity import Config, Entity
-from morph.module import Module, Step, _config, _Op
-from morph.operations import Delete, Patch, check_fields
-from morph.store import Store
+from morphly.entity import Config, Entity
+from morphly.module import Module, Step, _config, _Op
+from morphly.operations import Delete, Patch, check_fields
+from morphly.store import Store
 
 
 class _RunCache:
@@ -46,15 +46,15 @@ def _input_key(step: Step, store: Store) -> tuple[tuple[str, ...], ...]:
     return tuple(key)
 
 
-class Pipeline:
+class Workflow:
     """An ordered list of steps, checked before it runs.
 
-    The order is yours: a pipeline is a list, not a scheduler. What it does guarantee is
+    The order is yours: a workflow is a list, not a scheduler. What it does guarantee is
     that an inconsistent order — a step reading a type nobody upstream provides — fails
     in a millisecond instead of three hours in.
 
     Args:
-        *steps: [`Step`][morph.Step] instances, modules, or plain functions. A bare
+        *steps: [`Step`][morphly.Step] instances, modules, or plain functions. A bare
             module is equivalent to `Step(module)`.
 
     Attributes:
@@ -65,12 +65,12 @@ class Pipeline:
 
     Examples:
         ```python
-        pipeline = Pipeline(
+        workflow = Workflow(
             Step(compute_gross, PayrollPolicy(overtime_after=35.0)),
             withhold,
             archive_timesheets,
         )
-        pipeline.run(store)
+        workflow.run(store)
         ```
     """
 
@@ -90,15 +90,15 @@ class Pipeline:
     def check(self, store: Store) -> None:
         """Validate the chaining on types only, without running anything.
 
-        Replays the pipeline on types: it starts from `store.types()` and adds, after
+        Replays the workflow on types: it starts from `store.types()` and adds, after
         each step, the types that step produces. A step reading or touching a type that
         is neither in the initial store nor produced upstream is an error.
 
-        Called automatically by [`run`][morph.Pipeline.run]; call it yourself to fail at
-        startup, before loading any data.
+        Called automatically by [`run`][morphly.Workflow.run]; call it yourself to fail
+        at startup, before loading any data.
 
         Args:
-            store: The state the pipeline would run on. Only its types are read.
+            store: The state the workflow would run on. Only its types are read.
 
         Raises:
             LookupError: If a step reads or touches a type nobody provides.
@@ -134,7 +134,7 @@ class Pipeline:
         """Check, then run every step in order and apply its output.
 
         A step's operations are collected and validated before any of them is written,
-        so a step never applies halfway. The pipeline as a whole is not transactional:
+        so a step never applies halfway. The workflow as a whole is not transactional:
         for a non-destructive run, pass `copy.deepcopy(store)`.
 
         Args:
@@ -145,7 +145,7 @@ class Pipeline:
             on_step: Called as `on_step(step, ops, store)` after each step is applied,
                 with the operations it just wrote. The hook for logs, metrics,
                 provenance and writing intermediate outputs.
-            reuse: A previous [`last_run`][morph.Pipeline.last_run] to replay from. A
+            reuse: A previous [`last_run`][morphly.Workflow.last_run] to replay from. A
                 step whose reads are byte-for-byte identical to that run is skipped —
                 its recorded outcome is restored from an in-memory snapshot instead of
                 calling the module again. The first step whose reads differ, and every
@@ -156,7 +156,7 @@ class Pipeline:
             The same `store`, mutated.
 
         Raises:
-            LookupError: If [`check`][morph.Pipeline.check] fails, or a config is
+            LookupError: If [`check`][morphly.Workflow.check] fails, or a config is
                 missing.
             TypeError: If a module returns an operation it did not declare.
             KeyError: If a `Patch` or `Delete` target is missing or ambiguous.
@@ -185,7 +185,7 @@ class Pipeline:
         """One line per step: reads(), then produced and ~touched types.
 
         Returns:
-            A rendering of the pipeline's dataflow, for logs and reviews. Touched types
+            A rendering of the workflow's dataflow, for logs and reviews. Touched types
             are prefixed with `~`.
 
         Examples:
@@ -198,11 +198,11 @@ class Pipeline:
         return "\n".join(f"{i}. {s!r}" for i, s in enumerate(self.steps, 1))
 
     def to_mermaid(self) -> str:
-        """Render the pipeline's dataflow as a Mermaid flowchart.
+        """Render the workflow's dataflow as a Mermaid flowchart.
 
-        Same information as [`explain`][morph.Pipeline.explain], as a graph instead of a
-        line per step: every edge is a `reads`/`produces`/`touches` relationship already
-        present in the modules' signatures, so the graph cannot go stale.
+        Same information as [`explain`][morphly.Workflow.explain], as a graph instead of
+        a line per step: every edge is a `reads`/`produces`/`touches` relationship
+        already present in the modules' signatures, so the graph cannot go stale.
 
         Returns:
             A `flowchart LR` block: `Type --> step` for entity reads, `step --> Type`
@@ -210,7 +210,7 @@ class Pipeline:
 
         Examples:
             ```python
-            print(pipeline.to_mermaid())
+            print(workflow.to_mermaid())
             ```
             ```text
             flowchart LR
@@ -233,7 +233,7 @@ class Pipeline:
         return "flowchart LR\n" + "\n".join(f"    {edge}" for edge in edges)
 
     def __repr__(self) -> str:
-        return f"Pipeline({', '.join(s.name for s in self.steps)})"
+        return f"Workflow({', '.join(s.name for s in self.steps)})"
 
 
 def _entity(cls: type) -> bool:

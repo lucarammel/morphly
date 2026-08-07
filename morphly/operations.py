@@ -6,14 +6,14 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from morph.entity import Entity
+from morphly.entity import Entity
 
 
 class Delete[E: Entity]:
     """Deletion marker returned by a module. Annotate as `Delete[Timesheet]`.
 
     Returning a `Delete` does not remove anything by itself: it is an intent, applied by
-    the pipeline once the whole step has been validated.
+    the workflow once the whole step has been validated.
 
     Args:
         target: The entity to remove. Only its type lineage and `name` are used, so an
@@ -43,7 +43,7 @@ class Patch[E: Entity]:
     untouched — the normal output of a module that computes a few attributes on shared
     objects. Returning a whole `Entity` instead means creation or full replacement.
 
-    Like [`Delete`][morph.Delete], it is an intent: nothing is written until the step
+    Like [`Delete`][morphly.Delete], it is an intent: nothing is written until the step
     has produced all of its operations and they have all been validated.
 
     Args:

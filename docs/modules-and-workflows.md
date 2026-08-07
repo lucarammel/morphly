@@ -1,4 +1,4 @@
-# Modules and pipelines
+# Modules and workflows
 
 A module is a function with `@module` on it. That's the entire authoring interface — no base class, no
 abstract methods, no registration.
@@ -13,7 +13,7 @@ def compute_gross(
 ```
 
 The decorator reads the annotations **at import time** and builds the contract. A bad signature fails when
-the module is imported, not when the pipeline reaches it.
+the module is imported, not when the workflow reaches it.
 
 ## Injection rules (parameters)
 
@@ -41,12 +41,12 @@ def sneaky(employees: list[Employee]) -> None:
     employees[0].gross = 999.0  # no effect
 
 
-Pipeline(sneaky).run(store)
+Workflow(sneaky).run(store)
 store.find(Employee, "ada").gross  # unchanged
 ```
 
 This is what makes modules safe to write in isolation: the only way to change anything is to say so in the
-return type. `Pipeline.run(copy_inputs=False)` turns the copy off when volume demands it — the guarantee
+return type. `Workflow.run(copy_inputs=False)` turns the copy off when volume demands it — the guarantee
 then disappears, and that's a conscious choice, not a default.
 
 ## Output rules (return value)
@@ -93,7 +93,7 @@ That's the whole basis of [validation](validation.md).
 
 ## `Step` — per-step configuration
 
-A pipeline can run **the same module twice with different parameters**. Configs therefore live on the
+A workflow can run **the same module twice with different parameters**. Configs therefore live on the
 step, not on the module:
 
 ```python
@@ -105,7 +105,7 @@ class ReportPolicy(Config):
 def report(slips: list[Payslip], policy: ReportPolicy) -> None: ...
 
 
-Pipeline(
+Workflow(
     compute_gross,
     withhold,
     Step(report, ReportPolicy(detailed=False), name="summary"),
@@ -116,12 +116,12 @@ Pipeline(
 - `Step(module, *configs, name=None)` — `name` defaults to the function's name, suffixed on collision
   (`report`, `report_2`).
 - Resolving a `Config`: the step's configs first, then `store.one(...)`.
-- A bare module passed to `Pipeline` is equivalent to `Step(module)`.
+- A bare module passed to `Workflow` is equivalent to `Step(module)`.
 
 A config bound to a step is the right default for anything that varies *per occurrence*. Put it in the
 store when it's genuinely global to the run.
 
-## `Pipeline`
+## `Workflow`
 
 | Method | Effect |
 |---|---|
@@ -132,7 +132,7 @@ store when it's genuinely global to the run.
 
 ### The order is yours
 
-`Pipeline` is a list, not a scheduler. It will not reorder your steps, and it does not try to infer a
+`Workflow` is a list, not a scheduler. It will not reorder your steps, and it does not try to infer a
 dependency graph. What it guarantees is that an order which *cannot* work is rejected before anything
 runs.
 
@@ -147,7 +147,7 @@ is a silent mistake, because both types are in the store from the start. See
 a graph, for a reviewer who won't open the code:
 
 ```python
-print(Pipeline(compute_gross, add_bonus, withhold, archive, report).to_mermaid())
+print(Workflow(compute_gross, add_bonus, withhold, archive, report).to_mermaid())
 ```
 
 ```mermaid
@@ -170,7 +170,7 @@ A solid arrow is a read (`Type --> step`) or a production (`step --> Type`); a d
 ### `on_step` — the observability hook
 
 ```python
-pipeline.run(store, on_step=lambda step, ops, store: log.info("%s: %s", step.name, [repr(o) for o in ops]))
+workflow.run(store, on_step=lambda step, ops, store: log.info("%s: %s", step.name, [repr(o) for o in ops]))
 ```
 
 ```text
@@ -188,16 +188,16 @@ writing outputs to disk — see [Recipes](recipes.md).
 ### `reuse` — skip steps whose inputs haven't changed
 
 A step's inputs are typed and pydantic, therefore comparable. `reuse` takes advantage of that: pass in a
-previous `pipeline.last_run`, and a step whose reads are identical to that run is skipped — its outcome is
+previous `workflow.last_run`, and a step whose reads are identical to that run is skipped — its outcome is
 restored from an in-memory snapshot instead of calling the module again.
 
 ```python
-pipeline.run(store)
+workflow.run(store)
 # ... edit compute_gross ...
-pipeline.run(loaded_store(), reuse=pipeline.last_run)  # add_bonus, withhold, archive: skipped
+workflow.run(loaded_store(), reuse=workflow.last_run)  # add_bonus, withhold, archive: skipped
 ```
 
 The first step whose reads differ, and every step after it, runs for real — a downstream step reading
 unchanged data still counts as unchanged, even if an upstream step re-ran and happened to produce the same
-values. In-memory only, for the lifetime of the `Pipeline` object: nothing is written to disk, and there is
+values. In-memory only, for the lifetime of the `Workflow` object: nothing is written to disk, and there is
 no invalidation to configure.

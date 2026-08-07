@@ -1,7 +1,7 @@
 [project]
-site_name = "morph"
+site_name = "morphly"
 site_url = "https://lucarammel.github.io/morph/"
-site_description = "Typed pipelines over a shared set of pydantic business objects"
+site_description = "Typed workflows over a shared set of pydantic business objects"
 site_author = "Lucas Pereira"
 repo_url = "https://github.com/lucarammel/morph"
 repo_name = "lucarammel/morph"
@@ -13,7 +13,7 @@ nav = [
   { "Home" = "index.md" },
   { "Getting started" = "getting-started.md" },
   { "Concepts" = "concepts.md" },
-  { "Modules and pipelines" = "modules-and-pipelines.md" },
+  { "Modules and workflows" = "modules-and-workflows.md" },
   { "Validation" = "validation.md" },
   { "Recipes" = "recipes.md" },
   { "API reference" = "reference.md" },

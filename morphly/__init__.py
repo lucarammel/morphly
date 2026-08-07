@@ -1,14 +1,14 @@
-"""morph — typed pipelines over a shared set of pydantic business objects."""
+"""morphly — typed workflows over a shared set of pydantic business objects."""
 
 from importlib.metadata import version
 
-from morph.entity import Config, Entity
-from morph.module import Module, Step, module
-from morph.operations import Delete, Patch, view
-from morph.pipeline import Pipeline
-from morph.store import Store
+from morphly.entity import Config, Entity
+from morphly.module import Module, Step, module
+from morphly.operations import Delete, Patch, view
+from morphly.store import Store
+from morphly.workflow import Workflow
 
-__version__ = version("morph")
+__version__ = version("morphly")
 
 __all__ = [
     "Config",
@@ -16,9 +16,9 @@ __all__ = [
     "Entity",
     "Module",
     "Patch",
-    "Pipeline",
     "Step",
     "Store",
+    "Workflow",
     "module",
     "view",
 ]

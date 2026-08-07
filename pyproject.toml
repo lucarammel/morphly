@@ -1,12 +1,12 @@
 [project]
-name = "morph"
+name = "morphly"
 version = "0.1.0"
-description = "Typed pipelines over a shared set of pydantic business objects"
+description = "Typed workflows over a shared set of pydantic business objects"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 authors = [{ name = "Lucas Pereira", email = "lucaspereira0497@gmail.com" }]
-keywords = ["pipeline", "pydantic", "orchestration", "typed", "workflow"]
+keywords = ["workflow", "pydantic", "orchestration", "typed", "pipeline"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -46,7 +46,7 @@ build-backend = "uv_build"
 url = "https://pypi.org/simple/"
 
 [tool.uv.build-backend]
-module-name = "morph"
+module-name = "morphly"
 module-root = ""
 
 [tool.ruff]

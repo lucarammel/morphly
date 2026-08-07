@@ -46,14 +46,14 @@ uv run pytest .
 We use `ruff` to format and lint the code:
 
 ```bash
-uv run ruff format morph
-uv run ruff check morph
+uv run ruff format morphly
+uv run ruff check morphly
 ```
 
 We also use `ty` for typing analysis :
 
 ```bash
-uv run ty check morph
+uv run ty check morphly
 ```
 
 ## Build the documentation website
