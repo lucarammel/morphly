@@ -1,38 +1,85 @@
-# Contributing to morph
+# Contributing
 
-## Setup
+Thanks for taking the time to contribute!
+We welcome bug reports, feature suggestions, and pull requests.
 
-```bash
-uv sync
-```
+## Project Setup
 
-## Before opening a PR
+This project uses [`uv`](https://github.com/astral-sh/uv/#installation) for dependency management and Python environment isolation.
 
-```bash
-uv run pytest --cov=morph      # tests + coverage
-uv run ruff check morph tests  # lint
-uv run ruff format morph tests # format
-uv run ty check                 # typecheck
-```
-
-All three checks (lint, typecheck, test) run in CI on every pull request — they must pass locally before
-pushing.
-
-## Commit convention
-
-One commit = one logical change, imperative-mood message describing *why* rather than *what* (the diff
-already shows the what).
-
-## PR process
-
-1. One branch per change, off `main`.
-2. CI (lint/typecheck/test) must be green.
-3. One review before merge.
-
-## Documentation
-
-The docs site (`docs/`) is built with [zensical](https://zensical.org):
+### 1. Clone the Repository
 
 ```bash
-uv run --group docs zensical serve   # local preview on localhost:8000
+git clone https://github.com/lucarammel/morph.git
 ```
+
+### Set up the Environment
+
+```bash
+uv sync --all-groups
+```
+
+Install pre-commit hooks
+
+```bash
+uv run pre-commit install
+```
+
+If you're contributing new dependencies, install them with:
+
+```bash
+uv add package-name
+```
+
+## Running Tests
+
+We use pytest for testing. To run the tests:
+
+```bash
+uv run pytest .
+```
+
+> Make sure all tests pass before submitting a PR.
+
+## Code Style
+
+We use `ruff` to format and lint the code:
+
+```bash
+uv run ruff format morph
+uv run ruff check morph
+```
+
+We also use `ty` for typing analysis :
+
+```bash
+uv run ty check morph
+```
+
+## Build the documentation website
+
+We use `zensical` to build our documentation website, run the command below and visit [http://localhost:8000](http://localhost:8000) :
+
+```bash
+uv sync --all-groups
+uv run zensical serve
+```
+
+## Making a Pull Request
+
+Before contributing code, make sure you've:
+
+- Synced with the latest version of the `develop` branch.
+- Created a **descriptive branch name** using one of the following conventions:
+
+### Branch Naming Conventions
+
+- `feat/your-feature-name` or `feature/your-feature-name` – for new features
+
+- `fix/your-fix-description` – for bug fixes
+
+- `chore/your-task` – for non-functional tasks like config or dependency updates
+
+- `docs/your-doc-change` – for documentation-only changes
+
+- `test/your-test-task` – for adding or improving tests
