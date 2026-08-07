@@ -11,12 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ matrix.python-version }}
       - run: uv sync
       - run: uv run pytest --cov=morph --cov-report=term-missing
       - name: Generate coverage badge
+        if: matrix.python-version == '3.13'
         run: |
           COV=$(uv run coverage report --format=total)
           if [ "$COV" -ge 90 ]; then COLOR=brightgreen
@@ -24,7 +30,7 @@ jobs:
           else COLOR=red
           fi
           curl -s "https://img.shields.io/badge/coverage-${COV}%25-${COLOR}" -o coverage.svg
-      - if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      - if: matrix.python-version == '3.13' && github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "chore: update coverage badge"

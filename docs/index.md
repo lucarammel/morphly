@@ -16,7 +16,7 @@ def withhold(employees: list[Employee], policy: PayrollPolicy) -> list[Payslip]:
 That signature is the whole contract. There is no base class to inherit from, no registry to keep in sync,
 and no `get_objects_used()` to write by hand and forget to update.
 
-One dependency: `pydantic`. Python ≥ 3.13.
+One dependency: `pydantic`. Python ≥ 3.12.
 
 ## In one example
 
