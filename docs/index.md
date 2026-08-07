@@ -9,25 +9,21 @@ hide:
 
 # morph<span class="hero-accent">()</span>
 
-Independent modules over a shared set of business objects.
-**The function signature is the contract.**
+Independent modules chained into a typed workflow over a shared set of business objects.
+**Each step's signature is its contract.**
 
 ```python
-@module
-def withhold(employees: list[Employee], policy: PayrollPolicy) -> list[Payslip]: ...
+Pipeline(compute_gross, add_bonus, withhold, archive).run(store)
 ```
-
-[Get started :lucide-arrow-right:](getting-started.md){ .md-button .md-button--primary }
-[:fontawesome-brands-github: Source](https://github.com/lucarammel/morph){ .md-button }
 
 </div>
 
 <div class="hero-points" markdown>
 
+- **Checked before it runs** — an inconsistent workflow never reaches your data.
+- **The signature is the contract** — what each step reads, creates, and touches.
 - **The type is the key** — no enum, no registry.
-- **The signature is the contract** — checked, not just documented.
-- **Fails before it runs** — never reaches your data.
-- **Modules are isolated** — only the return value is applied.
+- **Steps are isolated** — only the return value is applied.
 
 </div>
 

@@ -62,10 +62,6 @@
   overflow: hidden;
 }
 
-.md-typeset .hero .md-button {
-  margin: 0.25rem;
-}
-
 .md-typeset .hero-points {
   display: flex;
   justify-content: center;
