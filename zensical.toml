@@ -33,6 +33,7 @@ features = [
   "search.highlight",
 ]
 icon.repo = "fontawesome/brands/github"
+logo = "assets/logo-mark.svg"
 
 [[project.theme.palette]]
 media = "(prefers-color-scheme: light)"

@@ -9,8 +9,7 @@ annotated function: its signature declares what it reads, what it creates, and w
 
 ```python
 @module
-def withhold(employees: list[Employee], policy: PayrollPolicy) -> list[Payslip]:
-    ...
+def withhold(employees: list[Employee], policy: PayrollPolicy) -> list[Payslip]: ...
 ```
 
 That signature is the whole contract. There is no base class to inherit from, no registry to keep in sync,
@@ -158,12 +157,50 @@ Hand-rolled orchestrators all converge on the same flaws, which `morph` refuses 
 
 ## Where to go next
 
-| Page | For |
-|---|---|
-| [Getting started](getting-started.md) | Building the payroll pipeline from scratch, one step at a time. |
-| [Concepts](concepts.md) | `Entity`, `Config`, `Store`, `Patch`, `Delete`, `view`. |
-| [Modules and pipelines](modules-and-pipelines.md) | The injection and output rules, in full. |
-| [Validation](validation.md) | What is checked, when, and which exception you get. |
-| [Recipes](recipes.md) | Same module twice, unit-testing a module, snapshots, observability. |
-| [API reference](reference.md) | Every public symbol, generated from the source. |
-| [Non-goals](non-goals.md) | What is deliberately absent, and what would justify adding it. |
+Read in this order the first time; jump straight to any card once you know what you're after.
+
+<div class="grid cards" markdown>
+
+-   :lucide-rocket:{ .lg .middle } **[Getting started](getting-started.md)**
+
+    ---
+
+    Build the payroll pipeline from scratch, one step at a time.
+
+-   :lucide-layers:{ .lg .middle } **[Concepts](concepts.md)**
+
+    ---
+
+    `Entity`, `Config`, `Store`, `Patch`, `Delete`, `view` — the six building blocks.
+
+-   :lucide-workflow:{ .lg .middle } **[Modules and pipelines](modules-and-pipelines.md)**
+
+    ---
+
+    The injection and output rules, in full.
+
+-   :lucide-shield-check:{ .lg .middle } **[Validation](validation.md)**
+
+    ---
+
+    What is checked, when, and which exception you get.
+
+-   :lucide-flask-conical:{ .lg .middle } **[Recipes](recipes.md)**
+
+    ---
+
+    Same module twice, unit-testing a module, snapshots, observability.
+
+-   :lucide-code:{ .lg .middle } **[API reference](reference.md)**
+
+    ---
+
+    Every public symbol, generated from the source.
+
+-   :lucide-ban:{ .lg .middle } **[Non-goals](non-goals.md)**
+
+    ---
+
+    What is deliberately absent, and what would justify adding it.
+
+</div>
