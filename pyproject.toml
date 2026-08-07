@@ -21,9 +21,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/lucarammel/morph"
-Repository = "https://github.com/lucarammel/morph"
-Issues = "https://github.com/lucarammel/morph/issues"
+Homepage = "https://github.com/lucarammel/morphly"
+Repository = "https://github.com/lucarammel/morphly"
+Issues = "https://github.com/lucarammel/morphly/issues"
 
 [dependency-groups]
 dev = [

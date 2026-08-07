@@ -6,7 +6,7 @@ library, and there are only six.
 ## Install
 
 ```bash
-uv add git+https://github.com/lucarammel/morph
+uv add git+https://github.com/lucarammel/morphly
 ```
 
 One dependency, `pydantic>=2.9`. Python ≥ 3.12.

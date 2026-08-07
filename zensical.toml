@@ -1,10 +1,10 @@
 [project]
 site_name = "morphly"
-site_url = "https://lucarammel.github.io/morph/"
+site_url = "https://lucarammel.github.io/morphly/"
 site_description = "Typed workflows over a shared set of pydantic business objects"
 site_author = "Lucas Pereira"
-repo_url = "https://github.com/lucarammel/morph"
-repo_name = "lucarammel/morph"
+repo_url = "https://github.com/lucarammel/morphly"
+repo_name = "lucarammel/morphly"
 edit_uri = "edit/main/docs"
 docs_dir = "docs"
 extra_css = ["assets/extra.css"]
