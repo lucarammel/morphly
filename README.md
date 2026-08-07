@@ -5,65 +5,101 @@
   <img src="assets/logo-light.svg" alt="morphly" width="200">
 </picture>
 
-**Independent modules. A shared set of business objects. A contract you can read in the signature.**
+**Independent modules, chained into a typed workflow, over a shared set of business objects.**
 
 [![testing](https://github.com/lucarammel/morphly/actions/workflows/test.yml/badge.svg)](https://github.com/lucarammel/morphly/actions/workflows/test.yml)
 [![coverage](https://codecov.io/gh/lucarammel/morphly/graph/badge.svg)](https://codecov.io/gh/lucarammel/morphly)
 [![python](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
+[![docs](https://img.shields.io/badge/docs-lucarammel.github.io-6c63ff)](https://lucarammel.github.io/morphly/)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 > **Status**: under active development — no stable release yet.
 
- [Example](#example) · [Installation](#installation) · [Concepts](#concepts)
+[Why](#why-morphly) · [Example](#example) · [Installation](#installation) · [Documentation](https://lucarammel.github.io/morphly/)
 
 </div>
 
 ---
 
+## Why morphly
+
+Every team ends up writing the same thing: a handful of steps that read and update a shared set of
+business objects — a payroll run, an order pipeline, a simulation with several stages. The orchestration
+code always rots the same way too: a registry mapping names to classes, `dict[str, Any]` ferried between
+steps, and a `KeyError` three hours into a batch job because step 12 needed something step 4 forgot to
+produce.
+
+`morphly` turns each step into **one annotated Python function**. The signature — what it reads, creates,
+and touches — is the entire contract, and it's checked before any of your code runs, not discovered when it
+crashes.
+
+- **Typed by construction** — pydantic objects in, pydantic objects out. No untyped payloads passed between steps.
+- **The signature is the contract** — reads, creates, and touches are declared in the annotations, and enforced.
+- **Fails in milliseconds, not hours** — an inconsistent workflow is rejected before it touches your data.
+- **Zero registries** — the type is the key. Nothing to register when you add a business object.
+- **Isolated by default** — a module receives copies; only what it returns is applied. No mutation leaking between steps.
+
 ## Example
 
 ```python
-from morphly import Config, Delete, Entity, Patch, Step, Store, Workflow, module
+from morphly import Config, Entity, Patch, Store, Workflow, module
 
 
-class Plant(Entity):
-    pmax: float
-    cost: float
-    cleared: float = 0.0
+class Employee(Entity):
+    hourly_rate: float
 
 
-class Order(Entity):
-    volume: float
-    price: float
+class Timesheet(Entity):
+    employee: str
+    hours: float
 
 
-class BidParams(Config):
-    margin: float = 1.0
+class Payslip(Entity):
+    gross: float
+    net: float = 0.0
+
+
+class PayrollPolicy(Config):
+    tax_rate: float = 0.22
 
 
 @module
-def bidding(plants: list[Plant], params: BidParams) -> list[Order]:
-    return [Order(name=f"o_{p.name}", volume=p.pmax, price=p.cost * params.margin) for p in plants]
+def issue_payslip(employees: list[Employee], sheets: list[Timesheet]) -> list[Payslip]:
+    hours = {s.employee: s.hours for s in sheets}
+    return [Payslip(name=f"slip-{e.name}", gross=e.hourly_rate * hours.get(e.name, 0.0)) for e in employees]
 
 
 @module
-def clearing(orders: list[Order], plants: list[Plant]) -> list[Patch[Plant] | Delete[Order]]:
-    by_order = {f"o_{p.name}": p for p in plants}
-    return [Patch(by_order[o.name], cleared=o.volume) if o.price < 30 else Delete(o) for o in orders]
+def withhold_tax(slips: list[Payslip], policy: PayrollPolicy) -> list[Patch[Payslip]]:
+    return [Patch(s, net=s.gross * (1 - policy.tax_rate)) for s in slips]
 
 
-store = Store(Plant(name="a", pmax=100, cost=10), Plant(name="b", pmax=50, cost=40))
-Workflow(Step(bidding, BidParams(margin=1.2)), clearing).run(store)
+store = Store(
+    Employee(name="ada", hourly_rate=50.0),
+    Timesheet(name="ada-w1", employee="ada", hours=40.0),
+    PayrollPolicy(),
+)
+
+Workflow(issue_payslip, withhold_tax).run(store)
+
+store.find(Payslip, "slip-ada").net  # 1560.0 — 2000 gross, 22% withheld
 ```
 
-The core fits in **a handful of small files**. No enum, no name-to-class mapping, no registry to keep in sync:
+Two independent functions, chained into a `Workflow`, over a `Store` neither of them knows about. Reorder
+them, and `check` refuses to run before touching your data — `withhold_tax` reads `Payslip`, which nothing
+has produced yet:
 
-- **the type is the key** — reading `list[X]` returns everything stored under `X`, subclasses included;
-- **the signature is the contract** — the return type declares what's created (`Order`), updated (`Patch[X]`) or deleted (`Delete[X]`);
-- **`check` before `run`** — a module reading a type nobody provides fails in a millisecond, not after three hours of computation;
-- **isolation by default** — inputs are copied, only the return value is applied, a step never applies halfway.
+```text
+LookupError: step 'withhold_tax' reads Payslip, which is neither in the store nor produced by an upstream step
+```
 
-## Why
+## Installation
+
+```bash
+uv add git+https://github.com/lucarammel/morphly
+```
+
+## How it stacks up
 
 Hand-rolled orchestrators all converge on the same flaws. `morphly` refuses them by construction.
 
@@ -76,12 +112,6 @@ Hand-rolled orchestrators all converge on the same flaws. `morphly` refuses them
 | Mutations that leak from one module to another | Only the return value is applied. |
 | `deepcopy` of the whole state on every step | Copy of the subset actually read, and it can be turned off. |
 
-## Installation
-
-```bash
-uv add git+https://github.com/lucarammel/morphly
-```
-
 ## Concepts
 
 | | |
@@ -93,6 +123,7 @@ uv add git+https://github.com/lucarammel/morphly
 | **`@module`** | An annotated function becomes a module: its annotations are its contract. |
 | **`Workflow`** | An ordered list of steps, validated before it runs. |
 
+Full walkthrough, the injection/output rules, validation, and recipes: **[lucarammel.github.io/morphly](https://lucarammel.github.io/morphly/)**.
 
 ## Development
 
@@ -104,6 +135,8 @@ uv run ruff format morphly tests
 uv run ty check                # type checking
 uv run --group docs zensical serve  # docs locally on localhost:8000
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
 ## License
 
