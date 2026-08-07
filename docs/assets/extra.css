@@ -53,15 +53,6 @@
   margin: 0 auto 1.6rem;
 }
 
-.md-typeset .hero .highlight {
-  max-width: 30rem;
-  margin: 0 auto 1.8rem;
-  text-align: left;
-  border-radius: 0.5rem;
-  box-shadow: var(--md-shadow-z2);
-  overflow: hidden;
-}
-
 .md-typeset .hero-points {
   display: flex;
   justify-content: center;
@@ -81,13 +72,6 @@
   border-radius: 2rem;
   padding: 0.45rem 1rem;
   font-size: 0.72rem;
-}
-
-.md-typeset .hero-footnote {
-  text-align: center;
-  color: var(--md-default-fg-color--light);
-  font-size: 0.75rem;
-  margin-bottom: 2.5rem;
 }
 
 /* A tinted badge behind each card's leading icon, echoing the accent parens in the logo. */

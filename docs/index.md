@@ -12,10 +12,6 @@ hide:
 Independent modules chained into a typed workflow over a shared set of business objects.
 **Each step's signature is its contract.**
 
-```python
-Pipeline(compute_gross, add_bonus, withhold, archive).run(store)
-```
-
 </div>
 
 <div class="hero-points" markdown>
@@ -26,8 +22,6 @@ Pipeline(compute_gross, add_bonus, withhold, archive).run(store)
 - **Steps are isolated** — only the return value is applied.
 
 </div>
-
-<p class="hero-footnote">One dependency: <code>pydantic</code>. Python ≥ 3.12.</p>
 
 ## Where to go next
 
