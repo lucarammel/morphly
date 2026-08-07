@@ -284,35 +284,63 @@ class Store:
         """
         return self._locate(cls, name)[1]  # ty: ignore[invalid-return-type]
 
-    def drop(self, target: Entity) -> None:
+    def drop(self, target: Entity | type[Entity], name: str | None = None) -> None:
         """Remove the stored object matching `target`.
 
         Args:
-            target: An entity with the type lineage and `name` to remove. It does not
-                have to be the stored instance itself.
+            target: An entity with the type lineage and `name` to remove — it does not
+                have to be the stored instance itself — or the entity type, paired
+                with `name`.
+            name: The object's name, when `target` is a type.
 
         Raises:
+            TypeError: If `target` is a type and `name` is not given.
             KeyError: If no object matches, or if the name is ambiguous.
         """
-        bucket, obj = self._locate(type(target), target.name)
+        cls, name = self._target(target, name)
+        bucket, obj = self._locate(cls, name)
         del bucket[obj.name]
+        if not bucket:
+            del self._buckets[type(obj)]
 
-    def patch(self, target: Entity, fields: dict[str, Any]) -> None:
+    def patch(
+        self,
+        target: Entity | type[Entity],
+        name_or_fields: str | dict[str, Any],
+        fields: dict[str, Any] | None = None,
+    ) -> None:
         """Write `fields` onto the stored object matching `target`.
 
         Args:
-            target: An entity with the type lineage and `name` to update.
-            fields: Field names and values to write.
+            target: An entity with the type lineage and `name` to update, or the
+                entity type, paired with a name and fields.
+            name_or_fields: Field names and values to write, when `target` is an
+                entity, else the object's name.
+            fields: Field names and values to write, when `target` is a type.
 
         Raises:
+            TypeError: If `target` is a type and `fields` is not given.
             KeyError: If no object matches, or if the name is ambiguous.
             ValueError: If a name is not a field of the stored object.
             pydantic.ValidationError: If a value does not validate.
         """
-        obj = self.find(type(target), target.name)
+        if isinstance(target, Entity):
+            cls, name, fields = type(target), target.name, name_or_fields  # ty: ignore[invalid-assignment]
+        else:
+            cls, name = target, name_or_fields
+        if fields is None:
+            raise TypeError(f"patch({cls.__name__}, {name!r}, ...) requires fields")
+        obj = self.find(cls, name)  # ty: ignore[invalid-argument-type]
         check_fields(obj, fields)
         for key, value in fields.items():
             setattr(obj, key, value)
+
+    def _target(self, target: Entity | type[Entity], name: str | None) -> tuple[type[Entity], str]:
+        if isinstance(target, Entity):
+            return type(target), target.name
+        if name is None:
+            raise TypeError(f"{target.__name__} requires a name")
+        return target, name
 
     def types(self) -> set[type]:
         """Types currently present, entities and configs.

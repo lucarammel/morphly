@@ -273,6 +273,31 @@ def test_patch_requires_at_least_one_field():
         Patch(Plant(name="a", pmax=1, cost=1))
 
 
+def test_drop_by_type_and_name(store: Store):
+    store.drop(Plant, "a")
+    assert [p.name for p in store.all(Plant)] == ["b"]
+
+
+def test_drop_requires_a_name_when_given_a_type(store: Store):
+    with pytest.raises(TypeError, match="requires a name"):
+        store.drop(Plant)
+
+
+def test_drop_removes_the_bucket_once_empty(store: Store):
+    store.drop(ThermalPlant, "b")
+    assert "ThermalPlant" not in repr(store)
+
+
+def test_patch_by_type_and_name(store: Store):
+    store.patch(Plant, "a", {"cleared": 42.0})
+    assert store.find(Plant, "a").cleared == 42.0
+
+
+def test_patch_requires_fields_when_given_a_type(store: Store):
+    with pytest.raises(TypeError, match="requires fields"):
+        store.patch(Plant, "a")
+
+
 def test_store_repr(store: Store):
     assert repr(store) == "Store(Plant=1, ThermalPlant=1; BidParams)"
 
