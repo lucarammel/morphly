@@ -9,8 +9,7 @@ def compute_gross(
     employees: list[Employee],
     sheets: list[Timesheet],
     policy: PayrollPolicy,
-) -> list[Patch[Employee]]:
-    ...
+) -> list[Patch[Employee]]: ...
 ```
 
 The decorator reads the annotations **at import time** and builds the contract. A bad signature fails when
@@ -103,8 +102,7 @@ class ReportPolicy(Config):
 
 
 @module
-def report(slips: list[Payslip], policy: ReportPolicy) -> None:
-    ...
+def report(slips: list[Payslip], policy: ReportPolicy) -> None: ...
 
 
 Pipeline(
