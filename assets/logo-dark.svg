@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 80" role="img" aria-label="morph">
+  <text
+    x="6"
+    y="58"
+    font-family="ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace"
+    font-weight="700"
+    font-size="56"
+    letter-spacing="-1.5"
+  ><tspan fill="#f2f2f7">morph</tspan><tspan fill="#8b84ff">()</tspan></text>
+</svg>

@@ -1,21 +1,24 @@
 <div align="center">
 
-# morph
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
+  <img src="assets/logo-light.svg" alt="morph" width="200">
+</picture>
 
-**Des modules indépendants. Un jeu d'objets métier partagé. Un contrat lisible dans la signature.**
+**Independent modules. A shared set of business objects. A contract you can read in the signature.**
 
 [![CI](https://github.com/lucarammel/morph/actions/workflows/ci.yml/badge.svg)](https://github.com/lucarammel/morph/actions/workflows/ci.yml)
 [![coverage](./coverage.svg)](https://github.com/lucarammel/morph/actions/workflows/ci.yml)
 [![python](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
- [Exemple](#exemple) · [Installation](#installation) · [Concepts](#concepts)
+ [Example](#example) · [Installation](#installation) · [Concepts](#concepts)
 
 </div>
 
 ---
 
-## Exemple
+## Example
 
 ```python
 from morph import Config, Delete, Entity, Patch, Pipeline, Step, Store, module
@@ -48,25 +51,25 @@ store = Store(Plant(name="a", pmax=100, cost=10), Plant(name="b", pmax=50, cost=
 Pipeline(Step(bidding, BidParams(margin=1.2)), clearing).run(store)
 ```
 
-Le noyau tient en **deux fichiers**. Pas d'enum, pas de mapping nom→classe, pas de registre à tenir à jour :
+The core fits in **two files**. No enum, no name-to-class mapping, no registry to keep in sync:
 
-- **le type est la clé** — lire `list[X]` renvoie tout ce qui est stocké sous `X`, sous-classes incluses ;
-- **la signature est le contrat** — le retour déclare ce qui est créé (`Order`), mis à jour (`Patch[X]`) ou supprimé (`Delete[X]`) ;
-- **`check` avant `run`** — un module qui lit un type que personne ne fournit échoue en une milliseconde, pas après trois heures de calcul ;
-- **isolation par défaut** — les entrées sont copiées, seul le retour est appliqué, une étape ne s'applique pas à moitié.
+- **the type is the key** — reading `list[X]` returns everything stored under `X`, subclasses included;
+- **the signature is the contract** — the return type declares what's created (`Order`), updated (`Patch[X]`) or deleted (`Delete[X]`);
+- **`check` before `run`** — a module reading a type nobody provides fails in a millisecond, not after three hours of computation;
+- **isolation by default** — inputs are copied, only the return value is applied, a step never applies halfway.
 
-## Pourquoi
+## Why
 
-Les orchestrateurs maison convergent tous vers les mêmes défauts. `morph` les refuse par construction.
+Hand-rolled orchestrators all converge on the same flaws. `morph` refuses them by construction.
 
-| Défaut classique | Ce que fait `morph` |
+| Classic flaw | What `morph` does instead |
 |---|---|
-| Registre global `enum → classe` à tenir à jour | Le type est la clé. Rien à enregistrer. |
-| Modifications transportées en `dict[str, Any]` non validé | Des objets pydantic ou des `Patch` typés. |
-| 5–6 méthodes abstraites de plomberie par module | Une fonction annotée. |
-| Besoins déclarés à la main et jamais vérifiés | Les besoins **sont** la signature, et sont vérifiés. |
-| Mutations qui fuient d'un module à l'autre | Seul le retour est appliqué. |
-| `deepcopy` de tout l'état à chaque étape | Copie du seul sous-ensemble lu, désactivable. |
+| Global `enum → class` registry to keep in sync | The type is the key. Nothing to register. |
+| Changes carried around as unvalidated `dict[str, Any]` | Typed pydantic objects or `Patch` values. |
+| 5–6 abstract plumbing methods per module | One annotated function. |
+| Requirements declared by hand and never checked | The requirements **are** the signature, and they're checked. |
+| Mutations that leak from one module to another | Only the return value is applied. |
+| `deepcopy` of the whole state on every step | Copy of the subset actually read, and it can be turned off. |
 
 ## Installation
 
@@ -74,31 +77,31 @@ Les orchestrateurs maison convergent tous vers les mêmes défauts. `morph` les 
 uv add git+https://github.com/lucarammel/morph
 ```
 
-Une seule dépendance : `pydantic>=2.9`. Python ≥ 3.12.
+One dependency: `pydantic>=2.9`. Python ≥ 3.12.
 
 ## Concepts
 
 | | |
 |---|---|
-| **`Entity`** | Objet métier partagé, identifié par `name` au sein de sa lignée de types. |
-| **`Config`** | Entrée singleton : paramètres d'un module, réglages globaux. |
-| **`Store`** | L'état partagé. Buckets par type, lecture par type (sous-classes incluses). |
-| **`Patch[E]` / `Delete[E]`** | Mise à jour partielle / suppression, retournées par un module. |
-| **`@module`** | Une fonction annotée devient un module : ses annotations sont son contrat. |
-| **`Pipeline`** | Une liste ordonnée d'étapes, validée avant d'être exécutée. |
+| **`Entity`** | A shared business object, identified by `name` within its type lineage. |
+| **`Config`** | A singleton input: module parameters, global settings. |
+| **`Store`** | The shared state. Buckets by type, read by type (subclasses included). |
+| **`Patch[E]` / `Delete[E]`** | Partial update / deletion, returned by a module. |
+| **`@module`** | An annotated function becomes a module: its annotations are its contract. |
+| **`Pipeline`** | An ordered list of steps, validated before it runs. |
 
 
-## Développement
+## Development
 
 ```bash
 uv sync
-uv run pytest --cov=morph     # tests + couverture
+uv run pytest --cov=morph     # tests + coverage
 uv run ruff check morph tests # lint
 uv run ruff format morph tests
-uv run ty check                # typage
-uv run --group docs zensical serve  # doc en local sur localhost:8000 (contenu en anglais)
+uv run ty check                # type checking
+uv run --group docs zensical serve  # docs locally on localhost:8000
 ```
 
-## Licence
+## License
 
 [MIT](LICENSE)
