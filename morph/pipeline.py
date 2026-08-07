@@ -285,6 +285,15 @@ class Pipeline:
                     raise LookupError(
                         f"step {step.name!r} {label}, which is neither in the store nor produced by an upstream step"
                     )
+            for _, is_collection, cls in step.module.reads:
+                if is_collection or _entity(cls):
+                    continue
+                bound = any(isinstance(c, cls) for c in step.configs)
+                if not bound and not any(issubclass(t, cls) for t in available):
+                    raise LookupError(
+                        f"step {step.name!r} reads {cls.__name__}, which is neither bound to the step "
+                        "nor in the store nor produced by an upstream step"
+                    )
             available |= set(step.module.produces)
 
     def run(
