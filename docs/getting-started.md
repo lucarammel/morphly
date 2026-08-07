@@ -9,7 +9,7 @@ library, and there are only six.
 uv add git+https://github.com/lucarammel/morph
 ```
 
-One dependency, `pydantic>=2.9`. Python ≥ 3.13.
+One dependency, `pydantic>=2.9`. Python ≥ 3.12.
 
 ## 1. Describe the business objects
 

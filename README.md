@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/lucarammel/morph/actions/workflows/ci.yml/badge.svg)](https://github.com/lucarammel/morph/actions/workflows/ci.yml)
 [![coverage](./coverage.svg)](https://github.com/lucarammel/morph/actions/workflows/ci.yml)
-[![python](https://img.shields.io/badge/python-3.13%2B-blue)](https://www.python.org/)
+[![python](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
  [Exemple](#exemple) · [Installation](#installation) · [Concepts](#concepts)
@@ -74,7 +74,7 @@ Les orchestrateurs maison convergent tous vers les mêmes défauts. `morph` les 
 uv add git+https://github.com/lucarammel/morph
 ```
 
-Une seule dépendance : `pydantic>=2.9`. Python ≥ 3.13.
+Une seule dépendance : `pydantic>=2.9`. Python ≥ 3.12.
 
 ## Concepts
 
