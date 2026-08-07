@@ -210,6 +210,75 @@ def test_on_step_hook_receives_the_operations(store: Store):
     assert seen == [["Order", "Order"], ["Patch", "Delete"]]
 
 
+def test_reuse_is_none_before_the_first_run():
+    assert Pipeline(bidding).last_run is None
+
+
+def test_reuse_skips_steps_whose_inputs_are_unchanged(store: Store):
+    before = copy.deepcopy(store)
+    calls: list[str] = []
+
+    @module
+    def step_a(plants: list[Plant]) -> list[Patch[Plant]]:
+        calls.append("a")
+        return [Patch(p, cleared=p.pmax) for p in plants]
+
+    @module
+    def step_b(plants: list[Plant]) -> None:
+        calls.append("b")
+
+    pipeline = Pipeline(step_a, step_b)
+    pipeline.run(store)
+    assert calls == ["a", "b"]
+
+    calls.clear()
+    pipeline.run(before, reuse=pipeline.last_run)
+    assert calls == []
+    assert before.find(Plant, "a").cleared == 100
+
+
+def test_reuse_reruns_from_the_first_changed_step(store: Store):
+    calls: list[str] = []
+
+    @module
+    def step_a(plants: list[Plant]) -> list[Patch[Plant]]:
+        calls.append("a")
+        return [Patch(p, cleared=p.pmax) for p in plants]
+
+    @module
+    def step_b(plants: list[Plant]) -> None:
+        calls.append("b")
+
+    pipeline = Pipeline(step_a, step_b)
+    pipeline.run(store)
+    assert calls == ["a", "b"]
+
+    calls.clear()
+    changed = Store(
+        Plant(name="a", pmax=999, cost=10),
+        ThermalPlant(name="b", pmax=50, cost=40),
+        BidParams(margin=1.2),
+    )
+    pipeline.run(changed, reuse=pipeline.last_run)
+    assert calls == ["a", "b"]
+    assert changed.find(Plant, "a").cleared == 999
+
+
+def test_reuse_still_calls_on_step_for_a_skipped_step(store: Store):
+    before = copy.deepcopy(store)
+
+    @module
+    def step_a(plants: list[Plant]) -> list[Patch[Plant]]:
+        return [Patch(p, cleared=p.pmax) for p in plants]
+
+    pipeline = Pipeline(step_a)
+    pipeline.run(store)
+
+    seen: list[str] = []
+    pipeline.run(before, reuse=pipeline.last_run, on_step=lambda s, ops, st: seen.append(s.name))
+    assert seen == ["step_a"]
+
+
 def test_deepcopy_is_the_snapshot(store: Store):
     before = copy.deepcopy(store)
     Pipeline(bidding).run(store)

@@ -127,7 +127,7 @@ store when it's genuinely global to the run.
 
 | Method | Effect |
 |---|---|
-| `run(store, *, copy_inputs=True, on_step=None)` | `check`, then runs the steps in order. Returns the mutated store. |
+| `run(store, *, copy_inputs=True, on_step=None, reuse=None)` | `check`, then runs the steps in order. Returns the mutated store. |
 | `check(store)` | Validates the chaining without running anything. |
 | `explain()` | One line per step: reads, produced and `~`touched types. |
 | `to_mermaid()` | The same dataflow as a Mermaid flowchart. |
@@ -186,3 +186,20 @@ Called after each step is applied, with the operations it just wrote — `ops` i
 returned, already validated. `add_bonus` running empty is visible directly, instead of two identical
 `Store(...)` lines. One hook covers logs, metrics, provenance, progress bars, intermediate snapshots and
 writing outputs to disk — see [Recipes](recipes.md).
+
+### `reuse` — skip steps whose inputs haven't changed
+
+A step's inputs are typed and pydantic, therefore comparable. `reuse` takes advantage of that: pass in a
+previous `pipeline.last_run`, and a step whose reads are identical to that run is skipped — its outcome is
+restored from an in-memory snapshot instead of calling the module again.
+
+```python
+pipeline.run(store)
+# ... edit compute_gross ...
+pipeline.run(loaded_store(), reuse=pipeline.last_run)  # add_bonus, withhold, archive: skipped
+```
+
+The first step whose reads differ, and every step after it, runs for real — a downstream step reading
+unchanged data still counts as unchanged, even if an upstream step re-ran and happened to produce the same
+values. In-memory only, for the lifetime of the `Pipeline` object: nothing is written to disk, and there is
+no invalidation to configure.

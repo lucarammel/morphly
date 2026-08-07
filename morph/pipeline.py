@@ -187,6 +187,40 @@ def _config[C: Config](cls: type[C], configs: tuple[Config, ...], store: Store) 
     return hits[0] if hits else store.one(cls)
 
 
+class _RunCache:
+    """The reusable half of a `run`: one input key, snapshot and ops per step name."""
+
+    __slots__ = ("_entries",)
+
+    def __init__(self) -> None:
+        self._entries: dict[str, tuple[tuple[tuple[str, ...], ...], Store, list[_Op]]] = {}
+
+    def hit(self, step_name: str, key: tuple[tuple[str, ...], ...]) -> tuple[Store, list[_Op]] | None:
+        entry = self._entries.get(step_name)
+        if entry is None or entry[0] != key:
+            return None
+        return copy.deepcopy(entry[1]), entry[2]
+
+    def record(self, step_name: str, key: tuple[tuple[str, ...], ...], store: Store, ops: list[_Op]) -> None:
+        self._entries[step_name] = (key, copy.deepcopy(store), ops)
+
+
+def _input_key(step: Step, store: Store) -> tuple[tuple[str, ...], ...]:
+    """A hashable snapshot of everything a step would read right now.
+
+    One tuple per parameter, so two runs that inject the same objects in a different
+    shape never compare equal by accident.
+    """
+    key: list[tuple[str, ...]] = []
+    for _, is_collection, cls in step.module.reads:
+        if is_collection:
+            objs = sorted(store.all(cls), key=lambda o: (type(o).__name__, o.name))  # ty: ignore[invalid-argument-type]
+            key.append(tuple(o.model_dump_json() for o in objs))
+        else:
+            key.append((_config(cls, step.configs, store).model_dump_json(),))  # ty: ignore[invalid-argument-type]
+    return tuple(key)
+
+
 class Step:
     """A module plus the configs bound to that occurrence of it.
 
@@ -236,6 +270,9 @@ class Pipeline:
 
     Attributes:
         steps: The steps, in order, with duplicate names suffixed (`pay`, `pay_2`).
+        last_run: Cache of the most recent `run`, in memory. Pass it as `reuse` to a
+            later `run` to skip steps whose inputs haven't changed. `None` before the
+            first run.
 
     Examples:
         ```python
@@ -251,6 +288,7 @@ class Pipeline:
     def __init__(self, *steps: Step | Module | Callable[..., Any]):
         self.steps = [s if isinstance(s, Step) else Step(s) for s in steps]
         self._dedupe_names()
+        self.last_run: _RunCache | None = None
 
     def _dedupe_names(self) -> None:
         seen: dict[str, int] = {}
@@ -302,6 +340,7 @@ class Pipeline:
         *,
         copy_inputs: bool = True,
         on_step: Callable[[Step, list[_Op], Store], None] | None = None,
+        reuse: _RunCache | None = None,
     ) -> Store:
         """Check, then run every step in order and apply its output.
 
@@ -317,6 +356,12 @@ class Pipeline:
             on_step: Called as `on_step(step, ops, store)` after each step is applied,
                 with the operations it just wrote. The hook for logs, metrics,
                 provenance and writing intermediate outputs.
+            reuse: A previous [`last_run`][morph.Pipeline.last_run] to replay from. A
+                step whose reads are byte-for-byte identical to that run is skipped —
+                its recorded outcome is restored from an in-memory snapshot instead of
+                calling the module again. The first step whose reads differ, and every
+                step after it, runs for real. Handy in a notebook: touch step 12, rerun,
+                the first 11 are skipped.
 
         Returns:
             The same `store`, mutated.
@@ -331,11 +376,20 @@ class Pipeline:
             pydantic.ValidationError: If a written value does not validate.
         """
         self.check(store)
+        cache = _RunCache()
         for step in self.steps:
-            ops = step.module(store, step.configs, copy_inputs)
-            _apply(ops, store, step.module.touches, step.name)
+            key = _input_key(step, store)
+            hit = reuse.hit(step.name, key) if reuse else None
+            if hit is None:
+                ops = step.module(store, step.configs, copy_inputs)
+                _apply(ops, store, step.module.touches, step.name)
+            else:
+                snapshot, ops = hit
+                store.__dict__.update(snapshot.__dict__)
+            cache.record(step.name, key, store, ops)
             if on_step:
                 on_step(step, ops, store)
+        self.last_run = cache
         return store
 
     def explain(self) -> str:
