@@ -8,7 +8,7 @@
 **Independent modules. A shared set of business objects. A contract you can read in the signature.**
 
 [![testing](https://github.com/lucarammel/morph/actions/workflows/test.yml/badge.svg)](https://github.com/lucarammel/morph/actions/workflows/test.yml)
-[![coverage](./coverage.svg)](https://github.com/lucarammel/morph/actions/workflows/ci.yml)
+[![coverage](https://codecov.io/gh/lucarammel/morph/graph/badge.svg)](https://codecov.io/gh/lucarammel/morph)
 [![python](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 

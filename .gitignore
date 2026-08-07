@@ -6,6 +6,8 @@ dist/
 .mypy_cache/
 .ruff_cache/
 .coverage
+coverage.xml
+coverage.svg
 uv.lock
 .claude/
 site/
