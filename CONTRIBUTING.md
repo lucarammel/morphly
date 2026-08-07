@@ -10,7 +10,7 @@ This project uses [`uv`](https://github.com/astral-sh/uv/#installation) for depe
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/lucarammel/morph.git
+git clone https://github.com/lucarammel/morphly.git
 ```
 
 ### Set up the Environment

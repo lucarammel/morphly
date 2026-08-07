@@ -7,8 +7,8 @@
 
 **Independent modules. A shared set of business objects. A contract you can read in the signature.**
 
-[![testing](https://github.com/lucarammel/morph/actions/workflows/test.yml/badge.svg)](https://github.com/lucarammel/morph/actions/workflows/test.yml)
-[![coverage](https://codecov.io/gh/lucarammel/morph/graph/badge.svg)](https://codecov.io/gh/lucarammel/morph)
+[![testing](https://github.com/lucarammel/morphly/actions/workflows/test.yml/badge.svg)](https://github.com/lucarammel/morphly/actions/workflows/test.yml)
+[![coverage](https://codecov.io/gh/lucarammel/morphly/graph/badge.svg)](https://codecov.io/gh/lucarammel/morphly)
 [![python](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -79,7 +79,7 @@ Hand-rolled orchestrators all converge on the same flaws. `morphly` refuses them
 ## Installation
 
 ```bash
-uv add git+https://github.com/lucarammel/morph
+uv add git+https://github.com/lucarammel/morphly
 ```
 
 ## Concepts
