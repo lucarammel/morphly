@@ -1,5 +1,5 @@
 ---
-title: morph
+title: morphly
 hide:
   - navigation
   - toc
@@ -7,7 +7,7 @@ hide:
 
 <div class="hero" markdown>
 
-# morph<span class="hero-accent">()</span>
+# morphly<span class="hero-accent">()</span>
 
 Independent modules chained into a typed workflow over a shared set of business objects.
 **Each step's signature is its contract.**
@@ -33,7 +33,7 @@ Read in this order the first time; jump straight to any card once you know what 
 
     ---
 
-    Build the payroll pipeline from scratch, one step at a time.
+    Build the payroll workflow from scratch, one step at a time.
 
 -   :lucide-layers:{ .lg .middle } **[Concepts](concepts.md)**
 
@@ -41,7 +41,7 @@ Read in this order the first time; jump straight to any card once you know what 
 
     `Entity`, `Config`, `Store`, `Patch`, `Delete`, `view` — the six building blocks.
 
--   :lucide-workflow:{ .lg .middle } **[Modules and pipelines](modules-and-pipelines.md)**
+-   :lucide-workflow:{ .lg .middle } **[Modules and workflows](modules-and-workflows.md)**
 
     ---
 

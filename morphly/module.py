@@ -8,9 +8,9 @@ import typing
 from collections.abc import Callable, Iterator
 from typing import Any, get_args, get_origin
 
-from morph.entity import Config, Entity
-from morph.operations import Delete, Patch
-from morph.store import Store
+from morphly.entity import Config, Entity
+from morphly.operations import Delete, Patch
+from morphly.store import Store
 
 _Op = Entity | Config | Patch[Any] | Delete[Any]
 
@@ -27,7 +27,7 @@ def _nodes(annotation: Any) -> Iterator[Any]:
 class Module:
     """A function whose annotations declare what it reads, creates and touches.
 
-    Built by the [`@module`][morph.module] decorator; you rarely instantiate it
+    Built by the [`@module`][morphly.module] decorator; you rarely instantiate it
     yourself. The annotations are parsed once, at import time, and an unsupported or
     missing one fails there rather than mid-run.
 
@@ -161,8 +161,8 @@ def module(fn: Callable[..., Any]) -> Module:
             `Config subclass`, and whose return type is annotated.
 
     Returns:
-        A [`Module`][morph.Module], ready to be dropped into a
-        [`Pipeline`][morph.Pipeline].
+        A [`Module`][morphly.Module], ready to be dropped into a
+        [`Workflow`][morphly.Workflow].
 
     Raises:
         TypeError: If the signature does not form a valid contract.
@@ -193,14 +193,14 @@ class Step:
     """A module plus the configs bound to that occurrence of it.
 
     Configs live on the step, not on the module, so the same module can appear twice in
-    a pipeline with different parameters. A config bound here wins over the one in the
-    [`Store`][morph.Store].
+    a workflow with different parameters. A config bound here wins over the one in the
+    [`Store`][morphly.Store].
 
     Args:
-        module_: A [`Module`][morph.Module], or a plain function wrapped on the fly.
+        module_: A [`Module`][morphly.Module], or a plain function wrapped on the fly.
         *configs: Configs bound to this occurrence.
         name: Step name for `explain` and `on_step`. Defaults to the function's name,
-            suffixed on collision within a pipeline.
+            suffixed on collision within a workflow.
 
     Attributes:
         module: The wrapped module.
@@ -209,7 +209,7 @@ class Step:
 
     Examples:
         ```python
-        Pipeline(
+        Workflow(
             Step(withhold, PayrollPolicy(social_rate=0.22), name="withhold_fr"),
             Step(withhold, PayrollPolicy(social_rate=0.13), name="withhold_uk"),
         )

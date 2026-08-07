@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from morph.entity import Config, Entity
-from morph.operations import check_fields
+from morphly.entity import Config, Entity
+from morphly.operations import check_fields
 
 
 def _same_lineage(a: type, b: type) -> bool:
@@ -50,7 +50,7 @@ class Store:
         """Upsert entities (keyed by type and name) and configs (keyed by type).
 
         An entity replaces any object already stored under the same `(type, name)`. For
-        a partial update, use [`patch`][morph.Store.patch] instead.
+        a partial update, use [`patch`][morphly.Store.patch] instead.
 
         Args:
             *items: Entities and configs to store.
@@ -172,7 +172,7 @@ class Store:
 
         Returns:
             The concrete types held by the store. This is the starting point of
-            [`Pipeline.check`][morph.Pipeline.check].
+            [`Workflow.check`][morphly.Workflow.check].
         """
         return set(self._buckets) | set(self._configs)
 

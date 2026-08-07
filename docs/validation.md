@@ -12,7 +12,7 @@ the expensive work starts.
 
 ## How `check` works
 
-It replays the pipeline on **types**. It starts from `store.types()` and adds, after each step, the types
+It replays the workflow on **types**. It starts from `store.types()` and adds, after each step, the types
 that step produces:
 
 ```text
@@ -27,7 +27,7 @@ available = {Employee, Manager, Timesheet, PayrollPolicy}
 Move `report` to the front and it fails in a millisecond rather than after three hours of computation:
 
 ```python
-Pipeline(report, withhold).check(store)
+Workflow(report, withhold).check(store)
 # LookupError: step 'report' reads Payslip, which is neither in the store
 #              nor produced by an upstream step
 ```
@@ -50,15 +50,15 @@ own code — none of it is visible to it.
 
 - A step's outputs are **collected, validated, then applied**. If the eighth operation is invalid, the
   first seven have not been written: a step never applies halfway.
-- The **pipeline** is not transactional. If step 4 of 5 raises, steps 1–3 are already applied. For a
-  non-destructive run, pass a copy: `pipeline.run(copy.deepcopy(store))`.
+- The **workflow** is not transactional. If step 4 of 5 raises, steps 1–3 are already applied. For a
+  non-destructive run, pass a copy: `workflow.run(copy.deepcopy(store))`.
 - Application order is return order. A `put` then a `Delete` on the same object leaves it deleted.
 - `put` on an existing `(type, name)` **replaces** the object. Partial updates go through `Patch`.
 - The `Store` is mutated in place, and `run` returns it.
 
 ## Error catalogue
 
-Every message `morph` itself raises, with what to change.
+Every message `morphly` itself raises, with what to change.
 
 ### At import, from `@module`
 
@@ -68,7 +68,7 @@ TypeError: compute_gross: parameter 'employees' must be annotated
 Annotate it. Nothing is inferred.
 
 ```text
-TypeError: compute_gross: unsupported annotation for 'store': <class 'morph.store.Store'>. Expected list[Entity subclass] or a Config subclass.
+TypeError: compute_gross: unsupported annotation for 'store': <class 'morphly.store.Store'>. Expected list[Entity subclass] or a Config subclass.
 ```
 Only two shapes are injectable. A module cannot reach for the store itself.
 
@@ -120,7 +120,7 @@ The target was never stored, or an earlier step deleted it.
 ```text
 KeyError: 'bob' is ambiguous in the lineage of Employee: Contractor, Manager
 ```
-Two sibling types hold that name. `morph` refuses to guess — narrow the declared type, or rename.
+Two sibling types hold that name. `morphly` refuses to guess — narrow the declared type, or rename.
 
 ```text
 ValueError: dp returned a Patch on Plant 'a' which the same step deletes

@@ -15,7 +15,7 @@ class Entity(BaseModel):
     fields change.
 
     Two pydantic settings are enabled: `validate_assignment`, so every field write is
-    validated — including the ones a [`Patch`][morph.Patch] applies — and
+    validated — including the ones a [`Patch`][morphly.Patch] applies — and
     `arbitrary_types_allowed`, so a field may carry a non-pydantic object such as a
     dataframe, a matrix or a solver handle.
 
@@ -49,8 +49,8 @@ class Config(BaseModel):
     """A singleton input: module parameters, global settings, context.
 
     A `Config` has no `name` because there is only ever one of each type in play. It is
-    resolved by type, either from the [`Step`][morph.Step] it is bound to or from the
-    [`Store`][morph.Store].
+    resolved by type, either from the [`Step`][morphly.Step] it is bound to or from the
+    [`Store`][morphly.Store].
 
     Examples:
         ```python

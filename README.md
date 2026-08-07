@@ -14,7 +14,7 @@
 
 > **Status**: under active development — no stable release yet.
 
- [Exemple](#exemple) · [Installation](#installation) · [Concepts](#concepts)
+ [Example](#example) · [Installation](#installation) · [Concepts](#concepts)
 
 </div>
 
@@ -23,7 +23,7 @@
 ## Example
 
 ```python
-from morph import Config, Delete, Entity, Patch, Pipeline, Step, Store, module
+from morphly import Config, Delete, Entity, Patch, Step, Store, Workflow, module
 
 
 class Plant(Entity):
@@ -53,10 +53,10 @@ def clearing(orders: list[Order], plants: list[Plant]) -> list[Patch[Plant] | De
 
 
 store = Store(Plant(name="a", pmax=100, cost=10), Plant(name="b", pmax=50, cost=40))
-Pipeline(Step(bidding, BidParams(margin=1.2)), clearing).run(store)
+Workflow(Step(bidding, BidParams(margin=1.2)), clearing).run(store)
 ```
 
-The core fits in **two files**. No enum, no name-to-class mapping, no registry to keep in sync:
+The core fits in **a handful of small files**. No enum, no name-to-class mapping, no registry to keep in sync:
 
 - **the type is the key** — reading `list[X]` returns everything stored under `X`, subclasses included;
 - **the signature is the contract** — the return type declares what's created (`Order`), updated (`Patch[X]`) or deleted (`Delete[X]`);
@@ -65,9 +65,9 @@ The core fits in **two files**. No enum, no name-to-class mapping, no registry t
 
 ## Why
 
-Hand-rolled orchestrators all converge on the same flaws. `morph` refuses them by construction.
+Hand-rolled orchestrators all converge on the same flaws. `morphly` refuses them by construction.
 
-| Classic flaw | What `morph` does instead |
+| Classic flaw | What `morphly` does instead |
 |---|---|
 | Global `enum → class` registry to keep in sync | The type is the key. Nothing to register. |
 | Changes carried around as unvalidated `dict[str, Any]` | Typed pydantic objects or `Patch` values. |
@@ -91,16 +91,16 @@ uv add git+https://github.com/lucarammel/morph
 | **`Store`** | The shared state. Buckets by type, read by type (subclasses included). |
 | **`Patch[E]` / `Delete[E]`** | Partial update / deletion, returned by a module. |
 | **`@module`** | An annotated function becomes a module: its annotations are its contract. |
-| **`Pipeline`** | An ordered list of steps, validated before it runs. |
+| **`Workflow`** | An ordered list of steps, validated before it runs. |
 
 
 ## Development
 
 ```bash
 uv sync
-uv run pytest --cov=morph     # tests + coverage
-uv run ruff check morph tests # lint
-uv run ruff format morph tests
+uv run pytest --cov=morphly     # tests + coverage
+uv run ruff check morphly tests # lint
+uv run ruff format morphly tests
 uv run ty check                # type checking
 uv run --group docs zensical serve  # docs locally on localhost:8000
 ```

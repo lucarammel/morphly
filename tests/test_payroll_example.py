@@ -5,7 +5,7 @@ Kept as a test so the docs cannot drift from working code.
 
 import pytest
 
-from morph import Config, Delete, Entity, Patch, Pipeline, Store, module
+from morphly import Config, Delete, Entity, Patch, Store, Workflow, module
 
 # --- business objects --------------------------------------------------------
 
@@ -98,14 +98,14 @@ def fresh_store() -> Store:
     )
 
 
-PIPELINE = Pipeline(compute_gross, add_bonus, withhold, archive, report)
+WORKFLOW = Workflow(compute_gross, add_bonus, withhold, archive, report)
 
 
 # --- tests -------------------------------------------------------------------
 
 
 def test_full_run():
-    store = PIPELINE.run(fresh_store())
+    store = WORKFLOW.run(fresh_store())
 
     ada = store.find(Employee, "ada")
     bob = store.find(Manager, "bob")
@@ -127,7 +127,7 @@ def test_gross_patches_the_manager_through_its_parent_type():
 
 
 def test_check_catches_a_wrong_order():
-    wrong = Pipeline(report, withhold)
+    wrong = Workflow(report, withhold)
     with pytest.raises(LookupError, match="step 'report' reads Payslip"):
         wrong.check(fresh_store())
 
@@ -139,11 +139,11 @@ def test_modules_are_isolated_from_the_store():
     def sneaky(employees: list[Employee]) -> None:
         employees[0].gross = 999.0
 
-    store = Pipeline(sneaky).run(fresh_store())
+    store = Workflow(sneaky).run(fresh_store())
     assert store.find(Employee, "ada").gross == 0.0
 
 
 def test_explain():
-    assert PIPELINE.explain().splitlines()[0] == (
+    assert WORKFLOW.explain().splitlines()[0] == (
         "1. compute_gross: compute_gross(Employee[], Timesheet[], PayrollPolicy) -> ~Employee"
     )

@@ -3,37 +3,37 @@
 Generated from the source. Everything below is exported from the package root:
 
 ```python
-from morph import Config, Delete, Entity, Module, Patch, Pipeline, Step, Store, module, view
+from morphly import Config, Delete, Entity, Module, Patch, Step, Store, Workflow, module, view
 ```
 
 ## Business objects
 
 The types you subclass to describe your domain.
 
-::: morph.Entity
+::: morphly.Entity
 
-::: morph.Config
+::: morphly.Config
 
 ## Operations
 
 What a module returns to declare what it changed.
 
-::: morph.Patch
+::: morphly.Patch
 
-::: morph.Delete
+::: morphly.Delete
 
-::: morph.view
+::: morphly.view
 
 ## State
 
-::: morph.Store
+::: morphly.Store
 
 ## Orchestration
 
-::: morph.module
+::: morphly.module
 
-::: morph.Module
+::: morphly.Module
 
-::: morph.Step
+::: morphly.Step
 
-::: morph.Pipeline
+::: morphly.Workflow
