@@ -4,7 +4,7 @@
 
 **Des modules indépendants. Un jeu d'objets métier partagé. Un contrat lisible dans la signature.**
 
-[![CI](https://github.com/lucarammel/morph/actions/workflows/ci.yml/badge.svg)](https://github.com/lucarammel/morph/actions/workflows/ci.yml)
+[![testing](https://github.com/lucarammel/morph/actions/workflows/test.yml/badge.svg)](https://github.com/lucarammel/morph/actions/workflows/test.yml)
 [![coverage](./coverage.svg)](https://github.com/lucarammel/morph/actions/workflows/ci.yml)
 [![python](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
