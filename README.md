@@ -2,7 +2,7 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
-  <img src="assets/logo-light.svg" alt="morph" width="200">
+  <img src="assets/logo-light.svg" alt="morphly" width="200">
 </picture>
 
 **Independent modules. A shared set of business objects. A contract you can read in the signature.**
