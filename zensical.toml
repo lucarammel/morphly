@@ -5,7 +5,9 @@ site_description = "Typed pipelines over a shared set of pydantic business objec
 site_author = "Lucas Pereira"
 repo_url = "https://github.com/lucarammel/morph"
 repo_name = "lucarammel/morph"
+edit_uri = "edit/main/docs"
 docs_dir = "docs"
+extra_css = ["assets/extra.css"]
 
 nav = [
   { "Home" = "index.md" },
@@ -17,6 +19,34 @@ nav = [
   { "API reference" = "reference.md" },
   { "Non-goals" = "non-goals.md" },
 ]
+
+[project.theme]
+features = [
+  "navigation.instant",
+  "navigation.instant.progress",
+  "navigation.tracking",
+  "navigation.top",
+  "navigation.footer",
+  "toc.follow",
+  "content.code.copy",
+  "content.action.edit",
+  "search.highlight",
+]
+icon.repo = "fontawesome/brands/github"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "indigo"
+accent = "indigo"
+toggle = { icon = "lucide/moon", name = "Switch to dark mode" }
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "indigo"
+accent = "indigo"
+toggle = { icon = "lucide/sun", name = "Switch to light mode" }
 
 [project.plugins.mkdocstrings.config]
 handlers.python.options = { docstring_style = "google", show_source = false, show_root_heading = true, show_symbol_type_heading = true, show_symbol_type_toc = true, heading_level = 2, members_order = "source", separate_signature = true, show_signature_annotations = true, signature_crossrefs = true, docstring_section_style = "table", filters = ["!^_", "^__call__$"] }
