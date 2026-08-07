@@ -172,15 +172,17 @@ A solid arrow is a read (`Type --> step`) or a production (`step --> Type`); a d
 ### `on_step` — the observability hook
 
 ```python
-pipeline.run(store, on_step=lambda step, store: log.info("%s done: %s", step.name, store))
+pipeline.run(store, on_step=lambda step, ops, store: log.info("%s: %s", step.name, [repr(o) for o in ops]))
 ```
 
 ```text
-compute_gross done: Store(Employee=1, Manager=1, Timesheet=2; PayrollPolicy)
-add_bonus     done: Store(Employee=1, Manager=1, Timesheet=2; PayrollPolicy)
-withhold      done: Store(Employee=1, Manager=1, Payslip=2, Timesheet=2; PayrollPolicy)
-archive       done: Store(Employee=1, Manager=1, Payslip=2, Timesheet=0; PayrollPolicy)
+compute_gross: ["Patch(Employee(name='ada'), gross)", "Patch(Employee(name='bob'), gross)"]
+add_bonus:     []
+withhold:      ["Payslip(name='p_ada')", "Payslip(name='p_bob')"]
+archive:       ["Delete(Timesheet(name='ada-w1'))", "Delete(Timesheet(name='bob-w1'))"]
 ```
 
-Called after each step is applied. One hook covers logs, metrics, progress bars, intermediate snapshots
-and writing outputs to disk — see [Recipes](recipes.md).
+Called after each step is applied, with the operations it just wrote — `ops` is the list the module
+returned, already validated. `add_bonus` running empty is visible directly, instead of two identical
+`Store(...)` lines. One hook covers logs, metrics, provenance, progress bars, intermediate snapshots and
+writing outputs to disk — see [Recipes](recipes.md).

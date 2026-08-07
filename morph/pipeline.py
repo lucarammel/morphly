@@ -292,7 +292,7 @@ class Pipeline:
         store: Store,
         *,
         copy_inputs: bool = True,
-        on_step: Callable[[Step, Store], None] | None = None,
+        on_step: Callable[[Step, list[_Op], Store], None] | None = None,
     ) -> Store:
         """Check, then run every step in order and apply its output.
 
@@ -305,8 +305,9 @@ class Pipeline:
             copy_inputs: Deep-copy the values injected into each module. Turning this
                 off drops the isolation guarantee — a module mutating an input then
                 affects the shared state.
-            on_step: Called as `on_step(step, store)` after each step is applied. The
-                hook for logs, metrics, snapshots and writing intermediate outputs.
+            on_step: Called as `on_step(step, ops, store)` after each step is applied,
+                with the operations it just wrote. The hook for logs, metrics,
+                provenance and writing intermediate outputs.
 
         Returns:
             The same `store`, mutated.
@@ -324,7 +325,7 @@ class Pipeline:
             ops = step.module(store, step.configs, copy_inputs)
             _apply(ops, store, step.module.touches)
             if on_step:
-                on_step(step, store)
+                on_step(step, ops, store)
         return store
 
     def explain(self) -> str:

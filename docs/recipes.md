@@ -70,19 +70,21 @@ results = {
 ## Log or trace a run
 
 ```python
-pipeline.run(store, on_step=lambda step, store: log.info("%s → %s", step.name, store))
+pipeline.run(store, on_step=lambda step, ops, store: log.info("%s: %d ops", step.name, len(ops)))
 ```
 
 ```text
-compute_gross → Store(Employee=1, Manager=1, Timesheet=2; PayrollPolicy)
-withhold      → Store(Employee=1, Manager=1, Payslip=2, Timesheet=2; PayrollPolicy)
-archive       → Store(Employee=1, Manager=1, Payslip=2, Timesheet=0; PayrollPolicy)
+compute_gross: 2 ops
+withhold: 2 ops
+archive: 2 ops
 ```
 
-The same hook covers progress bars, metrics, and writing intermediate results:
+`ops` is the list of `Patch`/`Delete`/entity operations the step just wrote — useful for a business log
+(`f"{len(ops)} {type(ops[0]).__name__}"`) or for spotting a step that silently did nothing. The same hook
+covers progress bars, metrics, and writing intermediate results:
 
 ```python
-def checkpoint(step: Step, store: Store) -> None:
+def checkpoint(step: Step, ops: list, store: Store) -> None:
     Path(f"out/{step.name}.json").write_text(
         json.dumps([s.model_dump() for s in store.all(Payslip)])
     )

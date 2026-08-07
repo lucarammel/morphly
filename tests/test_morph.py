@@ -174,8 +174,14 @@ def test_step_is_atomic(store: Store):
 
 def test_on_step_hook(store: Store):
     seen: list[tuple[str, int]] = []
-    Pipeline(bidding, clearing).run(store, on_step=lambda s, st: seen.append((s.name, len(st.all(Order)))))
+    Pipeline(bidding, clearing).run(store, on_step=lambda s, ops, st: seen.append((s.name, len(st.all(Order)))))
     assert seen == [("bidding", 2), ("clearing", 1)]
+
+
+def test_on_step_hook_receives_the_operations(store: Store):
+    seen: list[list[str]] = []
+    Pipeline(bidding, clearing).run(store, on_step=lambda s, ops, st: seen.append([type(o).__name__ for o in ops]))
+    assert seen == [["Order", "Order"], ["Patch", "Delete"]]
 
 
 def test_deepcopy_is_the_snapshot(store: Store):
