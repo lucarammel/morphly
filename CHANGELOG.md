@@ -25,6 +25,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## 0.1.1 — 2026-08-08
+
 - ✨ `Store.history(obj)` returns every write a run made to an object — which step, which action, which
   fields — recorded from the single place all writes go through (#56).
 - ✨ `Workflow.run(store, atomic=True)` rolls the store back to its initial state if any step raises,
@@ -36,3 +38,26 @@ All notable changes to this project will be documented in this file.
 - 🔄 **Breaking**: `Workflow.run` only fills `last_run` when passed `record=True`. Recording costs one
   deep copy of the store per step and was previously paid by every run, including the ones that never
   replay (#53).
+- 🐛 Pre-commit's `ruff-format`/`ruff-check` hooks matched `files: ^morph/`, a leftover from before the
+  package was renamed to `morphly`; they ran on nothing.
+
+## 0.1.0 — 2026-08-07
+
+First release.
+
+- ✨ Initial API: `Entity`, `Config`, `Store`, `@module`/`Module`, `Step`, `Workflow`, `Patch`, `Delete`,
+  `view`.
+- ✨ `Workflow.to_mermaid()` renders the dataflow as a Mermaid flowchart (#32).
+- ✨ `on_step` receives the operations a step just wrote, not just its name (#30).
+- ✨ `Store.drop()` and `Store.patch()` can target by `(type, name)`, not only by instance (#31).
+- ✨ `Workflow.run(reuse=...)` skips steps whose inputs are unchanged since a previous run (#33).
+- 🐛 `check()` now validates the `Config` a module reads, not only the entities (#28).
+- 🐛 A step that `Patch`es a target it already `Delete`d in the same step now raises a clear error
+  instead of an opaque `KeyError` (#29).
+- 🔄 **Breaking**: renamed the package `morph` → `morphly` and `Pipeline` → `Workflow`, ahead of the
+  first PyPI publish.
+- 🔄 Lowered `requires-python` to 3.12 (#34).
+- 🧹 Split the single module into `entity.py` / `module.py` / `operations.py` / `store.py` /
+  `workflow.py`, one per concept.
+- 📚 Added the documentation site (zensical, deployed to GitHub Pages), CONTRIBUTING/SECURITY/code of
+  conduct, and a `py.typed` marker (#4, #5, #7).
