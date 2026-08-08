@@ -6,10 +6,10 @@ library, and there are only six.
 ## Install
 
 ```bash
-uv add git+https://github.com/lucarammel/morphly
+uv add morphly
 ```
 
-One dependency, `pydantic>=2.9`. Python ≥ 3.12.
+One dependency, `pydantic`. Python ≥ 3.12.
 
 ## 1. Describe the business objects
 
