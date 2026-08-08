@@ -18,6 +18,7 @@ nav = [
   { "Recipes" = "recipes.md" },
   { "API reference" = "reference.md" },
   { "Non-goals" = "non-goals.md" },
+  { "Changelog" = "changelog.md" },
 ]
 
 [project.theme]
