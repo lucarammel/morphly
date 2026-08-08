@@ -6,7 +6,7 @@ The type is the key: no enum, no name-to-class mapping, no registry. A module as
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, NamedTuple
 
 from morphly.entity import Config, Entity
 from morphly.operations import check_fields
@@ -14,6 +14,21 @@ from morphly.operations import check_fields
 
 def _same_lineage(a: type, b: type) -> bool:
     return issubclass(a, b) or issubclass(b, a)
+
+
+class Write(NamedTuple):
+    """One recorded write, as returned by [`history`][morphly.Store.history].
+
+    Attributes:
+        step: Name of the step that wrote.
+        action: `"put"`, `"patch"` or `"delete"` — the operation the module returned, not
+            its effect, so a `put` that replaced an existing object still reads `"put"`.
+        fields: The fields a `patch` wrote. Empty for `put` and `delete`.
+    """
+
+    step: str
+    action: str
+    fields: tuple[str, ...] = ()
 
 
 class Store:
@@ -44,6 +59,9 @@ class Store:
     def __init__(self, *items: Entity | Config):
         self._buckets: dict[type, dict[str, Entity]] = {}
         self._configs: dict[type, Config] = {}
+        # ponytail: unbounded, one tuple per write. Cap it if a single run ever writes
+        # enough times for the log itself to be the memory problem.
+        self._log: dict[tuple[type, str], list[Write]] = {}
         self.put(*items)
 
     def put(self, *items: Entity | Config) -> None:
@@ -159,6 +177,41 @@ class Store:
         check_fields(obj, fields)
         for key, value in fields.items():
             setattr(obj, key, value)
+
+    def history(self, target: Entity | type[Entity], name: str | None = None) -> list[Write]:
+        """Every write a workflow made to that object, oldest first.
+
+        The runtime counterpart of [`Workflow.to_mermaid`][morphly.Workflow.to_mermaid]:
+        the graph says which steps *may* write a type, the history says which ones did.
+        Recorded by [`Workflow.run`][morphly.Workflow.run], so a write made by calling
+        `put`/`patch`/`drop` directly leaves no entry, and configs are not tracked — they
+        have no `name` to key them by.
+
+        The log outlives the object: a deleted entity keeps its history, ending with its
+        `delete`. Reads follow the lineage like [`all`][morphly.Store.all] rather than
+        [`find`][morphly.Store.find], so an ambiguous name returns the writes of every
+        matching sibling type instead of raising.
+
+        Args:
+            target: An entity with the type lineage and `name` to look up, or the entity
+                type, paired with `name`.
+            name: The object's name, when `target` is a type.
+
+        Returns:
+            The recorded writes. Empty if the object was never written by a workflow.
+
+        Examples:
+            ```python
+            store.history(payslip)
+            # [Write(step='issue_payslip', action='put', fields=()),
+            #  Write(step='withhold_tax', action='patch', fields=('net',))]
+            ```
+        """
+        cls, name = self._target(target, name)
+        return [w for (t, n), writes in self._log.items() if _same_lineage(t, cls) and n == name for w in writes]
+
+    def _record(self, step: str, action: str, obj: Entity, fields: tuple[str, ...] = ()) -> None:
+        self._log.setdefault((type(obj), obj.name), []).append(Write(step, action, fields))
 
     def _target(self, target: Entity | type[Entity], name: str | None) -> tuple[type[Entity], str]:
         if isinstance(target, Entity):

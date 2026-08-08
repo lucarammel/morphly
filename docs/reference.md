@@ -3,7 +3,7 @@
 Generated from the source. Everything below is exported from the package root:
 
 ```python
-from morphly import Config, Delete, Entity, Module, Patch, Step, Store, Workflow, module, view
+from morphly import Config, Delete, Entity, Module, Patch, Step, Store, Workflow, Write, module, view
 ```
 
 ## Business objects
@@ -27,6 +27,8 @@ What a module returns to declare what it changed.
 ## State
 
 ::: morphly.Store
+
+::: morphly.Write
 
 ## Orchestration
 

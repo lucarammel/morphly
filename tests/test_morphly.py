@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 import morphly.workflow
-from morphly import Config, Delete, Entity, Patch, Step, Store, Workflow, module, view
+from morphly import Config, Delete, Entity, Patch, Step, Store, Workflow, Write, module, view
 
 
 class Plant(Entity):
@@ -483,6 +483,7 @@ def test_atomic_run_restores_the_store_on_failure(store: Store):
     with pytest.raises(RuntimeError):
         Workflow(bidding, boom).run(store, atomic=True)
     assert store.all(Order) == []
+    assert store.history(Order, "o_a") == []  # the log is rolled back with the rest
 
 
 def test_a_non_atomic_run_leaves_the_intermediate_state(store: Store):
@@ -493,3 +494,30 @@ def test_a_non_atomic_run_leaves_the_intermediate_state(store: Store):
     with pytest.raises(RuntimeError):
         Workflow(bidding, boom).run(store)
     assert len(store.all(Order)) == 2
+
+
+def test_history_records_who_wrote_what(store: Store):
+    Workflow(bidding, clearing).run(store)
+    assert store.history(Order, "o_a") == [Write("bidding", "put")]
+    assert store.history(Order, "o_b") == [Write("bidding", "put"), Write("clearing", "delete")]
+    assert store.history(store.find(Plant, "a")) == [Write("clearing", "patch", ("cleared",))]
+
+
+def test_history_ignores_writes_made_outside_a_run(store: Store):
+    store.put(Plant(name="c", pmax=1, cost=1))
+    store.patch(Plant, "c", {"cleared": 1.0})
+    assert store.history(Plant, "c") == []
+
+
+def test_history_follows_the_lineage(store: Store):
+    @module
+    def clear_all(plants: list[Plant]) -> list[Patch[Plant]]:
+        return [Patch(p, cleared=1.0) for p in plants]
+
+    Workflow(clear_all).run(store)
+    assert store.history(Plant, "b") == [Write("clear_all", "patch", ("cleared",))]  # b is a ThermalPlant
+
+
+def test_history_survives_a_snapshot(store: Store):
+    Workflow(bidding).run(store)
+    assert copy.deepcopy(store).history(Order, "o_a") == [Write("bidding", "put")]

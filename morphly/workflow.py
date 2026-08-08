@@ -328,8 +328,12 @@ def _apply(ops: Iterable[_Op], store: Store, touches: list[type], step_name: str
         if isinstance(op, Delete):
             assert stored is not None
             store.drop(stored)
+            store._record(step_name, "delete", stored)
         elif isinstance(op, Patch):
             assert stored is not None
             store.patch(stored, op.fields)
+            store._record(step_name, "patch", stored, tuple(op.fields))
         elif isinstance(op, (Entity, Config)):
             store.put(op)
+            if isinstance(op, Entity):
+                store._record(step_name, "put", op)
