@@ -434,3 +434,26 @@ def test_a_plain_run_does_not_pay_for_the_reuse_machinery(monkeypatch, store: St
 
     Workflow(bidding, clearing).run(copy.deepcopy(store), record=True)
     assert keyed == ["bidding", "clearing"]
+
+
+def test_a_failing_module_is_located_in_the_exception(store: Store):
+    @module
+    def boom(plants: list[Plant]) -> None:
+        raise ZeroDivisionError("nope")
+
+    with pytest.raises(ZeroDivisionError) as raised:
+        Workflow(bidding, boom).run(store)
+    note = raised.value.__notes__[0]
+    assert "in step 2/2 'boom'" in note
+    assert "boom(Plant[]) -> -" in note
+    assert "Order=2" in note  # the state the step saw, not the initial one
+
+
+def test_a_failing_apply_is_located_too(store: Store):
+    @module
+    def ghost_patch(plants: list[Plant]) -> list[Patch[Plant]]:
+        return [Patch(Plant(name="unknown", pmax=0, cost=0), cleared=1.0)]
+
+    with pytest.raises(KeyError) as raised:
+        Workflow(ghost_patch).run(store)
+    assert "in step 1/1 'ghost_patch'" in raised.value.__notes__[0]

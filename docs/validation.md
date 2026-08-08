@@ -52,6 +52,8 @@ own code — none of it is visible to it.
   first seven have not been written: a step never applies halfway.
 - The **workflow** is not transactional. If step 4 of 5 raises, steps 1–3 are already applied. For a
   non-destructive run, pass a copy: `workflow.run(copy.deepcopy(store))`.
+- An exception from a module, or from applying its output, is re-raised **unchanged** with a note naming the
+  step, its position and the state of the store. Your `except` clauses keep working.
 - Application order is return order. A `put` then a `Delete` on the same object leaves it deleted.
 - `put` on an existing `(type, name)` **replaces** the object. Partial updates go through `Patch`.
 - The `Store` is mutated in place, and `run` returns it.

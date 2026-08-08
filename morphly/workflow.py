@@ -138,6 +138,10 @@ class Workflow:
         so a step never applies halfway. The workflow as a whole is not transactional:
         for a non-destructive run, pass `copy.deepcopy(store)`.
 
+        An exception raised by a module, or while applying its output, is re-raised
+        unchanged with a note naming the step, its position and the state of the store —
+        the context you want when step 12 of 40 fails three hours into a batch.
+
         Args:
             store: The state to run on. **Mutated in place.**
             copy_inputs: Deep-copy the values injected into each module. Turning this
@@ -173,12 +177,16 @@ class Workflow:
         """
         self.check(store)
         cache = _RunCache() if record else None
-        for step in self.steps:
+        for position, step in enumerate(self.steps, 1):
             key = _input_key(step, store) if reuse is not None or cache is not None else None
             hit = reuse.hit(step.name, key) if reuse is not None and key is not None else None
             if hit is None:
-                ops = step.module(store, step.configs, copy_inputs)
-                _apply(ops, store, step.module.touches, step.name)
+                try:
+                    ops = step.module(store, step.configs, copy_inputs)
+                    _apply(ops, store, step.module.touches, step.name)
+                except Exception as error:
+                    error.add_note(f"in step {position}/{len(self.steps)} {step.name!r}: {step.module!r} | {store!r}")
+                    raise
             else:
                 snapshot, ops = hit
                 store.__dict__.update(snapshot.__dict__)
