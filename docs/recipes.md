@@ -77,6 +77,9 @@ withhold: 2 ops
 archive: 2 ops
 ```
 
+To ask the question the other way round — *which step wrote this object?* — use `store.history(obj)`
+instead of reconstructing it from the log.
+
 `ops` is the list of `Patch`/`Delete`/entity operations the step just wrote — useful for a business log
 (`f"{len(ops)} {type(ops[0]).__name__}"`) or for spotting a step that silently did nothing. The same hook
 covers progress bars, metrics, and writing intermediate results:
@@ -177,19 +180,33 @@ moved. `reuse` skips them:
 
 ```python
 store = loaded_store()
-workflow.run(store)
+workflow.run(store, record=True)
 
 # ... tweak add_bonus, rerun from scratch ...
 store = loaded_store()
 workflow.run(store, reuse=workflow.last_run)  # compute_gross: skipped, add_bonus onward: runs
 ```
 
+`record=True` is what fills `last_run`, and it is off by default: recording costs one deep copy of the
+store per step, which is worth it here and pure waste in a batch nobody replays.
+
 The cache lives on the `Workflow` object, in memory, for as long as the process runs. Nothing is persisted
 between processes — see [Snapshot and restore](#snapshot-and-restore) for that.
 
+## Roll back a failed run
+
+A step never applies halfway, but the workflow does: if step 4 of 5 raises, steps 1–3 are already written.
+`atomic=True` makes the whole run all-or-nothing, for the price of one deep copy of the store taken before
+the first step.
+
+```python
+workflow.run(store, atomic=True)  # raises: store is exactly as it was, history included
+```
+
 ## Snapshot and restore
 
-The store is a plain Python object.
+For anything else — comparing before and after, keeping several states around — the store is a plain Python
+object.
 
 ```python
 before = copy.deepcopy(store)

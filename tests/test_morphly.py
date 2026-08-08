@@ -3,7 +3,8 @@ import copy
 import pytest
 from pydantic import ValidationError
 
-from morphly import Config, Delete, Entity, Patch, Step, Store, Workflow, module, view
+import morphly.workflow
+from morphly import Config, Delete, Entity, Patch, Step, Store, Workflow, Write, module, view
 
 
 class Plant(Entity):
@@ -228,7 +229,7 @@ def test_reuse_skips_steps_whose_inputs_are_unchanged(store: Store):
         calls.append("b")
 
     workflow = Workflow(step_a, step_b)
-    workflow.run(store)
+    workflow.run(store, record=True)
     assert calls == ["a", "b"]
 
     calls.clear()
@@ -250,7 +251,7 @@ def test_reuse_reruns_from_the_first_changed_step(store: Store):
         calls.append("b")
 
     workflow = Workflow(step_a, step_b)
-    workflow.run(store)
+    workflow.run(store, record=True)
     assert calls == ["a", "b"]
 
     calls.clear()
@@ -272,7 +273,7 @@ def test_reuse_still_calls_on_step_for_a_skipped_step(store: Store):
         return [Patch(p, cleared=p.pmax) for p in plants]
 
     workflow = Workflow(step_a)
-    workflow.run(store)
+    workflow.run(store, record=True)
 
     seen: list[str] = []
     workflow.run(before, reuse=workflow.last_run, on_step=lambda s, ops, st: seen.append(s.name))
@@ -413,3 +414,110 @@ def test_patch_target_runtime_type_mismatch_is_rejected(store: Store):
 
     with pytest.raises(TypeError, match="not in its return type"):
         Workflow(bad).run(store)
+
+
+def test_last_run_is_only_recorded_on_demand(store: Store):
+    workflow = Workflow(bidding)
+    workflow.run(copy.deepcopy(store))
+    assert workflow.last_run is None
+    workflow.run(store, record=True)
+    assert workflow.last_run is not None
+
+
+def test_a_plain_run_does_not_pay_for_the_reuse_machinery(monkeypatch, store: Store):
+    """Keying a step means serialising everything it reads — not paid unless asked."""
+    keyed: list[str] = []
+    monkeypatch.setattr(morphly.workflow, "_input_key", lambda step, st: keyed.append(step.name) or ())
+
+    Workflow(bidding, clearing).run(copy.deepcopy(store))
+    assert keyed == []
+
+    Workflow(bidding, clearing).run(copy.deepcopy(store), record=True)
+    assert keyed == ["bidding", "clearing"]
+
+
+def test_a_failing_module_is_located_in_the_exception(store: Store):
+    @module
+    def boom(plants: list[Plant]) -> None:
+        raise ZeroDivisionError("nope")
+
+    with pytest.raises(ZeroDivisionError) as raised:
+        Workflow(bidding, boom).run(store)
+    note = raised.value.__notes__[0]
+    assert "in step 2/2 'boom'" in note
+    assert "boom(Plant[]) -> -" in note
+    assert "Order=2" in note  # the state the step saw, not the initial one
+
+
+def test_a_failing_apply_is_located_too(store: Store):
+    @module
+    def ghost_patch(plants: list[Plant]) -> list[Patch[Plant]]:
+        return [Patch(Plant(name="unknown", pmax=0, cost=0), cleared=1.0)]
+
+    with pytest.raises(KeyError) as raised:
+        Workflow(ghost_patch).run(store)
+    assert "in step 1/1 'ghost_patch'" in raised.value.__notes__[0]
+
+
+def test_check_reports_a_wrong_order_as_such(store: Store):
+    with pytest.raises(LookupError, match="produced by step 'bidding' at position 2 — move that step before it"):
+        Workflow(clearing, bidding).check(store)
+
+
+def test_check_still_reports_a_genuinely_missing_type(store: Store):
+    class Ghost(Entity):
+        pass
+
+    @module
+    def settle(ghosts: list[Ghost]) -> None: ...
+
+    with pytest.raises(LookupError, match="neither in the store nor produced by an upstream step"):
+        Workflow(settle).check(store)
+
+
+def test_atomic_run_restores_the_store_on_failure(store: Store):
+    @module
+    def boom(orders: list[Order]) -> None:
+        raise RuntimeError("nope")
+
+    with pytest.raises(RuntimeError):
+        Workflow(bidding, boom).run(store, atomic=True)
+    assert store.all(Order) == []
+    assert store.history(Order, "o_a") == []  # the log is rolled back with the rest
+
+
+def test_a_non_atomic_run_leaves_the_intermediate_state(store: Store):
+    @module
+    def boom(orders: list[Order]) -> None:
+        raise RuntimeError("nope")
+
+    with pytest.raises(RuntimeError):
+        Workflow(bidding, boom).run(store)
+    assert len(store.all(Order)) == 2
+
+
+def test_history_records_who_wrote_what(store: Store):
+    Workflow(bidding, clearing).run(store)
+    assert store.history(Order, "o_a") == [Write("bidding", "put")]
+    assert store.history(Order, "o_b") == [Write("bidding", "put"), Write("clearing", "delete")]
+    assert store.history(store.find(Plant, "a")) == [Write("clearing", "patch", ("cleared",))]
+
+
+def test_history_ignores_writes_made_outside_a_run(store: Store):
+    store.put(Plant(name="c", pmax=1, cost=1))
+    store.patch(Plant, "c", {"cleared": 1.0})
+    assert store.history(Plant, "c") == []
+
+
+def test_history_follows_the_lineage(store: Store):
+    @module
+    def clear_all(plants: list[Plant]) -> list[Patch[Plant]]:
+        return [Patch(p, cleared=1.0) for p in plants]
+
+    Workflow(clear_all).run(store)
+    assert store.history(Plant, "b") == [Write("clear_all", "patch", ("cleared",))]  # b is a ThermalPlant
+
+
+def test_history_survives_a_snapshot(store: Store):
+    Workflow(bidding).run(store)
+    assert copy.deepcopy(store).history(Order, "o_a") == [Write("bidding", "put")]

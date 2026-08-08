@@ -59,9 +59,9 @@ class Workflow:
 
     Attributes:
         steps: The steps, in order, with duplicate names suffixed (`pay`, `pay_2`).
-        last_run: Cache of the most recent `run`, in memory. Pass it as `reuse` to a
-            later `run` to skip steps whose inputs haven't changed. `None` before the
-            first run.
+        last_run: Cache of the most recent `run(record=True)`, in memory. Pass it as
+            `reuse` to a later `run` to skip steps whose inputs haven't changed. `None`
+            until a run records one.
 
     Examples:
         ```python
@@ -97,20 +97,33 @@ class Workflow:
         Called automatically by [`run`][morphly.Workflow.run]; call it yourself to fail
         at startup, before loading any data.
 
+        A type that *is* produced, but by a step further down the list, is reported as an
+        ordering problem, with the position to move: the workflow is complete, only its
+        order is wrong, and that is the far more common mistake.
+
         Args:
             store: The state the workflow would run on. Only its types are read.
 
         Raises:
             LookupError: If a step reads or touches a type nobody provides.
         """
+        producers: dict[type, tuple[int, str]] = {}
+        for position, step in enumerate(self.steps, 1):
+            for cls in step.module.produces:
+                producers.setdefault(cls, (position, step.name))
         available = store.types()
-        for step in self.steps:
+        for position, step in enumerate(self.steps, 1):
+            head = f"step {step.name!r} (position {position})"
             needed = [(f"reads {c.__name__}", c) for _, _, c in step.module.reads if _entity(c)]
             needed += [(f"touches {c.__name__}", c) for c in step.module.touches]
             for label, cls in needed:
                 if not any(issubclass(t, cls) for t in available):
                     raise LookupError(
-                        f"step {step.name!r} {label}, which is neither in the store nor produced by an upstream step"
+                        f"{head} {label}"
+                        + (
+                            _reorder_hint(cls, position, producers)
+                            or ", which is neither in the store nor produced by an upstream step"
+                        )
                     )
             for _, is_collection, cls in step.module.reads:
                 if is_collection or _entity(cls):
@@ -118,8 +131,11 @@ class Workflow:
                 bound = any(isinstance(c, cls) for c in step.configs)
                 if not bound and not any(issubclass(t, cls) for t in available):
                     raise LookupError(
-                        f"step {step.name!r} reads {cls.__name__}, which is neither bound to the step "
-                        "nor in the store nor produced by an upstream step"
+                        f"{head} reads {cls.__name__}"
+                        + (
+                            _reorder_hint(cls, position, producers)
+                            or ", which is neither bound to the step nor in the store nor produced by an upstream step"
+                        )
                     )
             available |= set(step.module.produces)
 
@@ -130,12 +146,18 @@ class Workflow:
         copy_inputs: bool = True,
         on_step: Callable[[Step, list[_Op], Store], None] | None = None,
         reuse: _RunCache | None = None,
+        record: bool = False,
+        atomic: bool = False,
     ) -> Store:
         """Check, then run every step in order and apply its output.
 
         A step's operations are collected and validated before any of them is written,
-        so a step never applies halfway. The workflow as a whole is not transactional:
-        for a non-destructive run, pass `copy.deepcopy(store)`.
+        so a step never applies halfway. The workflow as a whole is transactional only
+        with `atomic=True`.
+
+        An exception raised by a module, or while applying its output, is re-raised
+        unchanged with a note naming the step, its position and the state of the store —
+        the context you want when step 12 of 40 fails three hours into a batch.
 
         Args:
             store: The state to run on. **Mutated in place.**
@@ -151,6 +173,15 @@ class Workflow:
                 calling the module again. The first step whose reads differ, and every
                 step after it, runs for real. Handy in a notebook: touch step 12, rerun,
                 the first 11 are skipped.
+            record: Populate [`last_run`][morphly.Workflow.last_run], so a later run can
+                `reuse` it. Off by default because it is not free: it snapshots the store
+                after every step and serialises everything every step reads, so a
+                recorded run costs one deep copy of the store *per step* in time and in
+                memory. Turn it on where that pays for itself — a notebook, an
+                interactive session — not in a batch that will never be replayed.
+            atomic: Restore the store to its exact initial state if any step raises,
+                making the whole run all-or-nothing instead of just each step. Costs one
+                deep copy of the store, taken once before the first step.
 
         Returns:
             The same `store`, mutated.
@@ -165,20 +196,34 @@ class Workflow:
             pydantic.ValidationError: If a written value does not validate.
         """
         self.check(store)
-        cache = _RunCache()
-        for step in self.steps:
-            key = _input_key(step, store)
-            hit = reuse.hit(step.name, key) if reuse else None
-            if hit is None:
-                ops = step.module(store, step.configs, copy_inputs)
-                _apply(ops, store, step.module.touches, step.name)
-            else:
-                snapshot, ops = hit
-                store.__dict__.update(snapshot.__dict__)
-            cache.record(step.name, key, store, ops)
-            if on_step:
-                on_step(step, ops, store)
-        self.last_run = cache
+        backup = copy.deepcopy(store) if atomic else None
+        cache = _RunCache() if record else None
+        try:
+            for position, step in enumerate(self.steps, 1):
+                key = _input_key(step, store) if reuse is not None or cache is not None else None
+                hit = reuse.hit(step.name, key) if reuse is not None and key is not None else None
+                if hit is None:
+                    try:
+                        ops = step.module(store, step.configs, copy_inputs)
+                        _apply(ops, store, step.module.touches, step.name)
+                    except Exception as error:
+                        error.add_note(
+                            f"in step {position}/{len(self.steps)} {step.name!r}: {step.module!r} | {store!r}"
+                        )
+                        raise
+                else:
+                    snapshot, ops = hit
+                    store.__dict__.update(snapshot.__dict__)
+                if cache is not None and key is not None:
+                    cache.record(step.name, key, store, ops)
+                if on_step:
+                    on_step(step, ops, store)
+        except Exception:
+            if backup is not None:
+                store.__dict__.update(backup.__dict__)
+            raise
+        if cache is not None:
+            self.last_run = cache
         return store
 
     def explain(self) -> str:
@@ -240,6 +285,20 @@ def _entity(cls: type) -> bool:
     return issubclass(cls, Entity)
 
 
+def _reorder_hint(cls: type, position: int, producers: dict[type, tuple[int, str]]) -> str | None:
+    """The tail of a `check` error when the missing type is produced further down.
+
+    Returns:
+        A phrase naming the earliest downstream producer, or `None` if nobody produces
+        the type at all — a genuinely incomplete workflow rather than a misordered one.
+    """
+    downstream = sorted((p, n) for t, (p, n) in producers.items() if issubclass(t, cls) and p > position)
+    if not downstream:
+        return None
+    at, name = downstream[0]
+    return f", which is produced by step {name!r} at position {at} — move that step before it?"
+
+
 def _apply(ops: Iterable[_Op], store: Store, touches: list[type], step_name: str) -> None:
     """Apply a step's operations, after resolving and checking every target.
 
@@ -269,8 +328,12 @@ def _apply(ops: Iterable[_Op], store: Store, touches: list[type], step_name: str
         if isinstance(op, Delete):
             assert stored is not None
             store.drop(stored)
+            store._record(step_name, "delete", stored)
         elif isinstance(op, Patch):
             assert stored is not None
             store.patch(stored, op.fields)
+            store._record(step_name, "patch", stored, tuple(op.fields))
         elif isinstance(op, (Entity, Config)):
             store.put(op)
+            if isinstance(op, Entity):
+                store._record(step_name, "put", op)

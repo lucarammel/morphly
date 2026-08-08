@@ -125,7 +125,7 @@ store when it's genuinely global to the run.
 
 | Method | Effect |
 |---|---|
-| `run(store, *, copy_inputs=True, on_step=None, reuse=None)` | `check`, then runs the steps in order. Returns the mutated store. |
+| `run(store, *, copy_inputs=True, on_step=None, reuse=None, record=False, atomic=False)` | `check`, then runs the steps in order. Returns the mutated store. |
 | `check(store)` | Validates the chaining without running anything. |
 | `explain()` | One line per step: reads, produced and `~`touched types. |
 | `to_mermaid()` | The same dataflow as a Mermaid flowchart. |
@@ -182,8 +182,24 @@ archive:       ["Delete(Timesheet(name='ada-w1'))", "Delete(Timesheet(name='bob-
 
 Called after each step is applied, with the operations it just wrote — `ops` is the list the module
 returned, already validated. `add_bonus` running empty is visible directly, instead of two identical
-`Store(...)` lines. One hook covers logs, metrics, provenance, progress bars, intermediate snapshots and
-writing outputs to disk — see [Recipes](recipes.md).
+`Store(...)` lines. One hook covers logs, metrics, progress bars, intermediate snapshots and writing
+outputs to disk — see [Recipes](recipes.md).
+
+### `store.history` — which step wrote this
+
+`on_step` observes a run as it happens. `history` answers the question you ask afterwards, when a field
+holds a number nobody expected:
+
+```python
+store.history(payslip)
+# [Write(step='withhold', action='put', fields=()),
+#  Write(step='pay_out', action='patch', fields=('net',))]
+```
+
+Every write a run makes goes through one place, so recording it is free of any bookkeeping on your side.
+This is the runtime counterpart of `explain()` and `to_mermaid()`: the graph says which steps *may* write a
+type, the history says which ones did. Writes made by calling `put`/`patch`/`drop` yourself are not
+recorded, and the log outlives the object — a deleted entity keeps its history, ending with its `delete`.
 
 ### `reuse` — skip steps whose inputs haven't changed
 
@@ -191,8 +207,12 @@ A step's inputs are typed and pydantic, therefore comparable. `reuse` takes adva
 previous `workflow.last_run`, and a step whose reads are identical to that run is skipped — its outcome is
 restored from an in-memory snapshot instead of calling the module again.
 
+Recording is opt-in, because it is not free: `record=True` snapshots the store after every step and
+serialises everything every step reads, so it costs one deep copy of the store *per step*. You pay it in a
+notebook, where it buys back whole reruns; you don't pay it in a batch that will never be replayed.
+
 ```python
-workflow.run(store)
+workflow.run(store, record=True)
 # ... edit compute_gross ...
 workflow.run(loaded_store(), reuse=workflow.last_run)  # add_bonus, withhold, archive: skipped
 ```
