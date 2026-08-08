@@ -190,9 +190,20 @@ store per step, which is worth it here and pure waste in a batch nobody replays.
 The cache lives on the `Workflow` object, in memory, for as long as the process runs. Nothing is persisted
 between processes — see [Snapshot and restore](#snapshot-and-restore) for that.
 
+## Roll back a failed run
+
+A step never applies halfway, but the workflow does: if step 4 of 5 raises, steps 1–3 are already written.
+`atomic=True` makes the whole run all-or-nothing, for the price of one deep copy of the store taken before
+the first step.
+
+```python
+workflow.run(store, atomic=True)  # raises: the store is exactly as it was
+```
+
 ## Snapshot and restore
 
-The store is a plain Python object.
+For anything else — comparing before and after, keeping several states around — the store is a plain Python
+object.
 
 ```python
 before = copy.deepcopy(store)

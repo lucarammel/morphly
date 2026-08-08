@@ -473,3 +473,23 @@ def test_check_still_reports_a_genuinely_missing_type(store: Store):
 
     with pytest.raises(LookupError, match="neither in the store nor produced by an upstream step"):
         Workflow(settle).check(store)
+
+
+def test_atomic_run_restores_the_store_on_failure(store: Store):
+    @module
+    def boom(orders: list[Order]) -> None:
+        raise RuntimeError("nope")
+
+    with pytest.raises(RuntimeError):
+        Workflow(bidding, boom).run(store, atomic=True)
+    assert store.all(Order) == []
+
+
+def test_a_non_atomic_run_leaves_the_intermediate_state(store: Store):
+    @module
+    def boom(orders: list[Order]) -> None:
+        raise RuntimeError("nope")
+
+    with pytest.raises(RuntimeError):
+        Workflow(bidding, boom).run(store)
+    assert len(store.all(Order)) == 2

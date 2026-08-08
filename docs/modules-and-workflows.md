@@ -125,7 +125,7 @@ store when it's genuinely global to the run.
 
 | Method | Effect |
 |---|---|
-| `run(store, *, copy_inputs=True, on_step=None, reuse=None, record=False)` | `check`, then runs the steps in order. Returns the mutated store. |
+| `run(store, *, copy_inputs=True, on_step=None, reuse=None, record=False, atomic=False)` | `check`, then runs the steps in order. Returns the mutated store. |
 | `check(store)` | Validates the chaining without running anything. |
 | `explain()` | One line per step: reads, produced and `~`touched types. |
 | `to_mermaid()` | The same dataflow as a Mermaid flowchart. |

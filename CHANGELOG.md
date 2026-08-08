@@ -25,6 +25,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- ✨ `Workflow.run(store, atomic=True)` rolls the store back to its initial state if any step raises,
+  making the whole run all-or-nothing instead of just each step (#35).
+
 - ✨ `check()` reports a type produced further down the list as an ordering problem, naming the step to
   move and its position, instead of reporting the type as simply absent (#54).
 

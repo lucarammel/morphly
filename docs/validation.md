@@ -54,8 +54,9 @@ own code — none of it is visible to it.
 
 - A step's outputs are **collected, validated, then applied**. If the eighth operation is invalid, the
   first seven have not been written: a step never applies halfway.
-- The **workflow** is not transactional. If step 4 of 5 raises, steps 1–3 are already applied. For a
-  non-destructive run, pass a copy: `workflow.run(copy.deepcopy(store))`.
+- The **workflow** is not transactional by default. If step 4 of 5 raises, steps 1–3 are already applied.
+  Pass `atomic=True` to roll the whole run back, or a copy for a non-destructive run:
+  `workflow.run(copy.deepcopy(store))`.
 - An exception from a module, or from applying its output, is re-raised **unchanged** with a note naming the
   step, its position and the state of the store. Your `except` clauses keep working.
 - Application order is return order. A `put` then a `Delete` on the same object leaves it deleted.

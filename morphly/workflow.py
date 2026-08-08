@@ -147,12 +147,13 @@ class Workflow:
         on_step: Callable[[Step, list[_Op], Store], None] | None = None,
         reuse: _RunCache | None = None,
         record: bool = False,
+        atomic: bool = False,
     ) -> Store:
         """Check, then run every step in order and apply its output.
 
         A step's operations are collected and validated before any of them is written,
-        so a step never applies halfway. The workflow as a whole is not transactional:
-        for a non-destructive run, pass `copy.deepcopy(store)`.
+        so a step never applies halfway. The workflow as a whole is transactional only
+        with `atomic=True`.
 
         An exception raised by a module, or while applying its output, is re-raised
         unchanged with a note naming the step, its position and the state of the store —
@@ -178,6 +179,9 @@ class Workflow:
                 recorded run costs one deep copy of the store *per step* in time and in
                 memory. Turn it on where that pays for itself — a notebook, an
                 interactive session — not in a batch that will never be replayed.
+            atomic: Restore the store to its exact initial state if any step raises,
+                making the whole run all-or-nothing instead of just each step. Costs one
+                deep copy of the store, taken once before the first step.
 
         Returns:
             The same `store`, mutated.
@@ -192,24 +196,32 @@ class Workflow:
             pydantic.ValidationError: If a written value does not validate.
         """
         self.check(store)
+        backup = copy.deepcopy(store) if atomic else None
         cache = _RunCache() if record else None
-        for position, step in enumerate(self.steps, 1):
-            key = _input_key(step, store) if reuse is not None or cache is not None else None
-            hit = reuse.hit(step.name, key) if reuse is not None and key is not None else None
-            if hit is None:
-                try:
-                    ops = step.module(store, step.configs, copy_inputs)
-                    _apply(ops, store, step.module.touches, step.name)
-                except Exception as error:
-                    error.add_note(f"in step {position}/{len(self.steps)} {step.name!r}: {step.module!r} | {store!r}")
-                    raise
-            else:
-                snapshot, ops = hit
-                store.__dict__.update(snapshot.__dict__)
-            if cache is not None and key is not None:
-                cache.record(step.name, key, store, ops)
-            if on_step:
-                on_step(step, ops, store)
+        try:
+            for position, step in enumerate(self.steps, 1):
+                key = _input_key(step, store) if reuse is not None or cache is not None else None
+                hit = reuse.hit(step.name, key) if reuse is not None and key is not None else None
+                if hit is None:
+                    try:
+                        ops = step.module(store, step.configs, copy_inputs)
+                        _apply(ops, store, step.module.touches, step.name)
+                    except Exception as error:
+                        error.add_note(
+                            f"in step {position}/{len(self.steps)} {step.name!r}: {step.module!r} | {store!r}"
+                        )
+                        raise
+                else:
+                    snapshot, ops = hit
+                    store.__dict__.update(snapshot.__dict__)
+                if cache is not None and key is not None:
+                    cache.record(step.name, key, store, ops)
+                if on_step:
+                    on_step(step, ops, store)
+        except Exception:
+            if backup is not None:
+                store.__dict__.update(backup.__dict__)
+            raise
         if cache is not None:
             self.last_run = cache
         return store
