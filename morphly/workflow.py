@@ -97,20 +97,33 @@ class Workflow:
         Called automatically by [`run`][morphly.Workflow.run]; call it yourself to fail
         at startup, before loading any data.
 
+        A type that *is* produced, but by a step further down the list, is reported as an
+        ordering problem, with the position to move: the workflow is complete, only its
+        order is wrong, and that is the far more common mistake.
+
         Args:
             store: The state the workflow would run on. Only its types are read.
 
         Raises:
             LookupError: If a step reads or touches a type nobody provides.
         """
+        producers: dict[type, tuple[int, str]] = {}
+        for position, step in enumerate(self.steps, 1):
+            for cls in step.module.produces:
+                producers.setdefault(cls, (position, step.name))
         available = store.types()
-        for step in self.steps:
+        for position, step in enumerate(self.steps, 1):
+            head = f"step {step.name!r} (position {position})"
             needed = [(f"reads {c.__name__}", c) for _, _, c in step.module.reads if _entity(c)]
             needed += [(f"touches {c.__name__}", c) for c in step.module.touches]
             for label, cls in needed:
                 if not any(issubclass(t, cls) for t in available):
                     raise LookupError(
-                        f"step {step.name!r} {label}, which is neither in the store nor produced by an upstream step"
+                        f"{head} {label}"
+                        + (
+                            _reorder_hint(cls, position, producers)
+                            or ", which is neither in the store nor produced by an upstream step"
+                        )
                     )
             for _, is_collection, cls in step.module.reads:
                 if is_collection or _entity(cls):
@@ -118,8 +131,11 @@ class Workflow:
                 bound = any(isinstance(c, cls) for c in step.configs)
                 if not bound and not any(issubclass(t, cls) for t in available):
                     raise LookupError(
-                        f"step {step.name!r} reads {cls.__name__}, which is neither bound to the step "
-                        "nor in the store nor produced by an upstream step"
+                        f"{head} reads {cls.__name__}"
+                        + (
+                            _reorder_hint(cls, position, producers)
+                            or ", which is neither bound to the step nor in the store nor produced by an upstream step"
+                        )
                     )
             available |= set(step.module.produces)
 
@@ -255,6 +271,20 @@ class Workflow:
 
 def _entity(cls: type) -> bool:
     return issubclass(cls, Entity)
+
+
+def _reorder_hint(cls: type, position: int, producers: dict[type, tuple[int, str]]) -> str | None:
+    """The tail of a `check` error when the missing type is produced further down.
+
+    Returns:
+        A phrase naming the earliest downstream producer, or `None` if nobody produces
+        the type at all — a genuinely incomplete workflow rather than a misordered one.
+    """
+    downstream = sorted((p, n) for t, (p, n) in producers.items() if issubclass(t, cls) and p > position)
+    if not downstream:
+        return None
+    at, name = downstream[0]
+    return f", which is produced by step {name!r} at position {at} — move that step before it?"
 
 
 def _apply(ops: Iterable[_Op], store: Store, touches: list[type], step_name: str) -> None:

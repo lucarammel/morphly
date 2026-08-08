@@ -25,6 +25,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- ✨ `check()` reports a type produced further down the list as an ordering problem, naming the step to
+  move and its position, instead of reporting the type as simply absent (#54).
+
 - ✨ An exception raised by a module, or while applying its output, is re-raised unchanged with a note
   naming the step, its position and the state of the store (#55).
 

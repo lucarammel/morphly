@@ -43,6 +43,10 @@ Being explicit about the limits is more useful than overselling the guarantee.
 check — both types are in the store from the start — and quietly applies a bonus to a `gross` of zero.
 `check` reasons about availability, not about freshness. Ordering your steps is still your job.
 
+An order that is wrong *and* type-inconsistent, on the other hand, is caught and named: when the missing
+type is produced further down the list, the error says which step to move and where, rather than just
+reporting the type as absent.
+
 **Anything about values.** `check` never runs a module. Empty inputs, wrong numbers, an exception in your
 own code — none of it is visible to it.
 

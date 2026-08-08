@@ -457,3 +457,19 @@ def test_a_failing_apply_is_located_too(store: Store):
     with pytest.raises(KeyError) as raised:
         Workflow(ghost_patch).run(store)
     assert "in step 1/1 'ghost_patch'" in raised.value.__notes__[0]
+
+
+def test_check_reports_a_wrong_order_as_such(store: Store):
+    with pytest.raises(LookupError, match="produced by step 'bidding' at position 2 — move that step before it"):
+        Workflow(clearing, bidding).check(store)
+
+
+def test_check_still_reports_a_genuinely_missing_type(store: Store):
+    class Ghost(Entity):
+        pass
+
+    @module
+    def settle(ghosts: list[Ghost]) -> None: ...
+
+    with pytest.raises(LookupError, match="neither in the store nor produced by an upstream step"):
+        Workflow(settle).check(store)

@@ -127,8 +127,11 @@ def test_gross_patches_the_manager_through_its_parent_type():
 
 
 def test_check_catches_a_wrong_order():
+    """A type produced downstream is an ordering problem, and the message says where."""
     wrong = Workflow(report, withhold)
-    with pytest.raises(LookupError, match="step 'report' reads Payslip"):
+    with pytest.raises(LookupError, match=r"step 'report' \(position 1\) reads Payslip"):
+        wrong.check(fresh_store())
+    with pytest.raises(LookupError, match="produced by step 'withhold' at position 2 — move that step before it"):
         wrong.check(fresh_store())
 
 
