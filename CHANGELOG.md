@@ -20,3 +20,11 @@ All notable changes to this project will be documented in this file.
 - 🧹 Refactor
 - 📚 Docs
 - 🔒 Security
+
+---
+
+## Unreleased
+
+- 🔄 **Breaking**: `Workflow.run` only fills `last_run` when passed `record=True`. Recording costs one
+  deep copy of the store per step and was previously paid by every run, including the ones that never
+  replay (#53).

@@ -177,12 +177,15 @@ moved. `reuse` skips them:
 
 ```python
 store = loaded_store()
-workflow.run(store)
+workflow.run(store, record=True)
 
 # ... tweak add_bonus, rerun from scratch ...
 store = loaded_store()
 workflow.run(store, reuse=workflow.last_run)  # compute_gross: skipped, add_bonus onward: runs
 ```
+
+`record=True` is what fills `last_run`, and it is off by default: recording costs one deep copy of the
+store per step, which is worth it here and pure waste in a batch nobody replays.
 
 The cache lives on the `Workflow` object, in memory, for as long as the process runs. Nothing is persisted
 between processes — see [Snapshot and restore](#snapshot-and-restore) for that.

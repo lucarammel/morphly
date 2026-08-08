@@ -125,7 +125,7 @@ store when it's genuinely global to the run.
 
 | Method | Effect |
 |---|---|
-| `run(store, *, copy_inputs=True, on_step=None, reuse=None)` | `check`, then runs the steps in order. Returns the mutated store. |
+| `run(store, *, copy_inputs=True, on_step=None, reuse=None, record=False)` | `check`, then runs the steps in order. Returns the mutated store. |
 | `check(store)` | Validates the chaining without running anything. |
 | `explain()` | One line per step: reads, produced and `~`touched types. |
 | `to_mermaid()` | The same dataflow as a Mermaid flowchart. |
@@ -191,8 +191,12 @@ A step's inputs are typed and pydantic, therefore comparable. `reuse` takes adva
 previous `workflow.last_run`, and a step whose reads are identical to that run is skipped — its outcome is
 restored from an in-memory snapshot instead of calling the module again.
 
+Recording is opt-in, because it is not free: `record=True` snapshots the store after every step and
+serialises everything every step reads, so it costs one deep copy of the store *per step*. You pay it in a
+notebook, where it buys back whole reruns; you don't pay it in a batch that will never be replayed.
+
 ```python
-workflow.run(store)
+workflow.run(store, record=True)
 # ... edit compute_gross ...
 workflow.run(loaded_store(), reuse=workflow.last_run)  # add_bonus, withhold, archive: skipped
 ```

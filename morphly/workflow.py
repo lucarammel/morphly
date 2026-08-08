@@ -59,9 +59,9 @@ class Workflow:
 
     Attributes:
         steps: The steps, in order, with duplicate names suffixed (`pay`, `pay_2`).
-        last_run: Cache of the most recent `run`, in memory. Pass it as `reuse` to a
-            later `run` to skip steps whose inputs haven't changed. `None` before the
-            first run.
+        last_run: Cache of the most recent `run(record=True)`, in memory. Pass it as
+            `reuse` to a later `run` to skip steps whose inputs haven't changed. `None`
+            until a run records one.
 
     Examples:
         ```python
@@ -130,6 +130,7 @@ class Workflow:
         copy_inputs: bool = True,
         on_step: Callable[[Step, list[_Op], Store], None] | None = None,
         reuse: _RunCache | None = None,
+        record: bool = False,
     ) -> Store:
         """Check, then run every step in order and apply its output.
 
@@ -151,6 +152,12 @@ class Workflow:
                 calling the module again. The first step whose reads differ, and every
                 step after it, runs for real. Handy in a notebook: touch step 12, rerun,
                 the first 11 are skipped.
+            record: Populate [`last_run`][morphly.Workflow.last_run], so a later run can
+                `reuse` it. Off by default because it is not free: it snapshots the store
+                after every step and serialises everything every step reads, so a
+                recorded run costs one deep copy of the store *per step* in time and in
+                memory. Turn it on where that pays for itself — a notebook, an
+                interactive session — not in a batch that will never be replayed.
 
         Returns:
             The same `store`, mutated.
@@ -165,20 +172,22 @@ class Workflow:
             pydantic.ValidationError: If a written value does not validate.
         """
         self.check(store)
-        cache = _RunCache()
+        cache = _RunCache() if record else None
         for step in self.steps:
-            key = _input_key(step, store)
-            hit = reuse.hit(step.name, key) if reuse else None
+            key = _input_key(step, store) if reuse is not None or cache is not None else None
+            hit = reuse.hit(step.name, key) if reuse is not None and key is not None else None
             if hit is None:
                 ops = step.module(store, step.configs, copy_inputs)
                 _apply(ops, store, step.module.touches, step.name)
             else:
                 snapshot, ops = hit
                 store.__dict__.update(snapshot.__dict__)
-            cache.record(step.name, key, store, ops)
+            if cache is not None and key is not None:
+                cache.record(step.name, key, store, ops)
             if on_step:
                 on_step(step, ops, store)
-        self.last_run = cache
+        if cache is not None:
+            self.last_run = cache
         return store
 
     def explain(self) -> str:

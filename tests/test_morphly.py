@@ -3,6 +3,7 @@ import copy
 import pytest
 from pydantic import ValidationError
 
+import morphly.workflow
 from morphly import Config, Delete, Entity, Patch, Step, Store, Workflow, module, view
 
 
@@ -228,7 +229,7 @@ def test_reuse_skips_steps_whose_inputs_are_unchanged(store: Store):
         calls.append("b")
 
     workflow = Workflow(step_a, step_b)
-    workflow.run(store)
+    workflow.run(store, record=True)
     assert calls == ["a", "b"]
 
     calls.clear()
@@ -250,7 +251,7 @@ def test_reuse_reruns_from_the_first_changed_step(store: Store):
         calls.append("b")
 
     workflow = Workflow(step_a, step_b)
-    workflow.run(store)
+    workflow.run(store, record=True)
     assert calls == ["a", "b"]
 
     calls.clear()
@@ -272,7 +273,7 @@ def test_reuse_still_calls_on_step_for_a_skipped_step(store: Store):
         return [Patch(p, cleared=p.pmax) for p in plants]
 
     workflow = Workflow(step_a)
-    workflow.run(store)
+    workflow.run(store, record=True)
 
     seen: list[str] = []
     workflow.run(before, reuse=workflow.last_run, on_step=lambda s, ops, st: seen.append(s.name))
@@ -413,3 +414,23 @@ def test_patch_target_runtime_type_mismatch_is_rejected(store: Store):
 
     with pytest.raises(TypeError, match="not in its return type"):
         Workflow(bad).run(store)
+
+
+def test_last_run_is_only_recorded_on_demand(store: Store):
+    workflow = Workflow(bidding)
+    workflow.run(copy.deepcopy(store))
+    assert workflow.last_run is None
+    workflow.run(store, record=True)
+    assert workflow.last_run is not None
+
+
+def test_a_plain_run_does_not_pay_for_the_reuse_machinery(monkeypatch, store: Store):
+    """Keying a step means serialising everything it reads — not paid unless asked."""
+    keyed: list[str] = []
+    monkeypatch.setattr(morphly.workflow, "_input_key", lambda step, st: keyed.append(step.name) or ())
+
+    Workflow(bidding, clearing).run(copy.deepcopy(store))
+    assert keyed == []
+
+    Workflow(bidding, clearing).run(copy.deepcopy(store), record=True)
+    assert keyed == ["bidding", "clearing"]
