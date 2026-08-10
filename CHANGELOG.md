@@ -25,6 +25,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- ✨ `Put[E]` is an explicit creation marker, so a return annotation can spell out all three verbs —
+  `-> list[Put[Payslip] | Patch[Employee] | Delete[Timesheet]]` — instead of leaving creation implicit in
+  a bare type. Pure sugar: returning a bare `Entity`/`Config` still creates it (#65).
+
 ## 0.1.1 — 2026-08-08
 
 - ✨ `Store.history(obj)` returns every write a run made to an object — which step, which action, which

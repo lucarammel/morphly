@@ -118,24 +118,28 @@ Two consequences:
 - a module can hand back a **view**, an object whose own class isn't even in the store, as long as the
   declared type is.
 
-## `Patch[E]` and `Delete[E]`
+## `Put[E]`, `Patch[E]` and `Delete[E]`
 
 Not business objects — **intents**. Returning one changes nothing by itself; the workflow applies it once
 the whole step has been validated.
 
 ```python
+Put(payslip)  # creation / full replacement
 Patch(employee, gross=1937.50)  # partial update
 Delete(timesheet)  # deletion
 ```
 
 - `Patch` writes only the fields it's given. It's the normal output of a module that computes a few
   attributes on shared objects without touching the rest.
-- Returning a full `Entity` instead means creation or **full replacement**.
+- Returning a full `Entity` means creation or **full replacement**. `Put` is optional sugar for exactly
+  that: `Put(payslip)` and a bare `payslip` do the same thing, so use it when a return annotation is a
+  union and you'd rather read the three verbs than spot a bare type among them.
 - The type parameter is **required in the return annotation**: `list[Patch[Employee]]`. That's how the
   module declares it touches `Employee`. A bare `list[Patch]` is a declaration error.
 
 ```python
 -> list[Payslip]                        # creates / replaces
+-> list[Put[Payslip]]                   # the same, said out loud
 -> list[Patch[Employee]]                # updates a few fields
 -> list[Delete[Timesheet]]              # deletes
 -> list[Payslip | Delete[Timesheet]]    # several operations at once

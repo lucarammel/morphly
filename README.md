@@ -113,7 +113,7 @@ Hand-rolled orchestrators all converge on the same flaws. `morphly` refuses them
 | **`Entity`** | A shared business object, identified by `name` within its type lineage. |
 | **`Config`** | A singleton input: module parameters, global settings. |
 | **`Store`** | The shared state. Buckets by type, read by type (subclasses included). |
-| **`Patch[E]` / `Delete[E]`** | Partial update / deletion, returned by a module. |
+| **`Put[E]` / `Patch[E]` / `Delete[E]`** | Creation / partial update / deletion, returned by a module. |
 | **`@module`** | An annotated function becomes a module: its annotations are its contract. |
 | **`Workflow`** | An ordered list of steps, validated before it runs. |
 

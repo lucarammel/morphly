@@ -1,4 +1,4 @@
-"""What a module returns to declare a change: `Patch`, `Delete`, and the `view` helper."""
+"""What a module returns to declare a change: `Put`, `Patch`, `Delete`, and the `view` helper."""
 
 from __future__ import annotations
 
@@ -6,7 +6,39 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from morphly.entity import Entity
+from morphly.entity import Config, Entity
+
+
+class Put[E: Entity | Config]:
+    """Creation marker returned by a module. Annotate as `Put[Payslip]`.
+
+    Optional sugar: returning a bare `Entity` or `Config` creates or replaces it just the
+    same. `Put` exists so a signature can spell out the three verbs — `Put[Payslip] |
+    Patch[Employee] | Delete[Timesheet]` — instead of leaving creation implicit in a bare
+    type sitting in a union.
+
+    Like [`Patch`][morphly.Patch] and [`Delete`][morphly.Delete], it is an intent: nothing
+    is written until the step has produced all of its operations and they have all been
+    validated. The object replaces anything stored under the same `(type, name)`.
+
+    Args:
+        target: The entity or config to store.
+
+    Examples:
+        ```python
+        @module
+        def issue(employees: list[Employee]) -> list[Put[Payslip]]:
+            return [Put(Payslip(name=e.name, net=e.gross)) for e in employees]
+        ```
+    """
+
+    __slots__ = ("target",)
+
+    def __init__(self, target: E):
+        self.target = target
+
+    def __repr__(self) -> str:
+        return f"Put({self.target!r})"
 
 
 class Delete[E: Entity]:
@@ -41,7 +73,8 @@ class Patch[E: Entity]:
 
     A `Patch` writes only the fields it is given and leaves the rest of the object
     untouched — the normal output of a module that computes a few attributes on shared
-    objects. Returning a whole `Entity` instead means creation or full replacement.
+    objects. Returning a whole `Entity`, bare or inside a [`Put`][morphly.Put], means
+    creation or full replacement instead.
 
     Like [`Delete`][morphly.Delete], it is an intent: nothing is written until the step
     has produced all of its operations and they have all been validated.

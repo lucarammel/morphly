@@ -201,6 +201,10 @@ def archive(sheets: list[Timesheet]) -> list[Delete[Timesheet]]:
 Note the difference the contract draws: `Payslip` is **produced** — it needn't exist yet — while
 `Delete[Timesheet]` **touches** a type that must already be there.
 
+If you'd rather see the verb in the signature, wrap it: `-> list[Put[Payslip]]` with
+`Put(Payslip(...))` means exactly the same thing. [`Put`][morphly.Put] is optional sugar — handy when the
+return type is a union and the bare entity is easy to miss.
+
 ## 8. A read-only step, and the check that earns its keep
 
 A module returning `None` writes nothing. Exports, metrics, monitoring.
@@ -267,7 +271,7 @@ from the signatures, so it can never be out of date.
 
 ## That's the whole library
 
-Six concepts: `Entity`, `Config`, `Store`, `Patch`/`Delete`, `@module`, `Workflow`.
+Six concepts: `Entity`, `Config`, `Store`, `Put`/`Patch`/`Delete`, `@module`, `Workflow`.
 
 - The full injection and output rules: [Modules and workflows](modules-and-workflows.md).
 - Everything that gets checked, and when: [Validation](validation.md).
