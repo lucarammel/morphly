@@ -80,7 +80,7 @@ archive: 2 ops
 To ask the question the other way round — *which step wrote this object?* — use `store.history(obj)`
 instead of reconstructing it from the log.
 
-`ops` is the list of `Patch`/`Delete`/entity operations the step just wrote — useful for a business log
+`ops` is the list of `Put`/`Patch`/`Delete`/entity operations the step just wrote — useful for a business log
 (`f"{len(ops)} {type(ops[0]).__name__}"`) or for spotting a step that silently did nothing. The same hook
 covers progress bars, metrics, and writing intermediate results:
 

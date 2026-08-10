@@ -9,15 +9,16 @@ from collections.abc import Callable, Iterator
 from typing import Any, get_args, get_origin
 
 from morphly.entity import Config, Entity
-from morphly.operations import Delete, Patch
+from morphly.operations import Delete, Patch, Put
 from morphly.store import Store
 
-_Op = Entity | Config | Patch[Any] | Delete[Any]
+_Op = Entity | Config | Put[Any] | Patch[Any] | Delete[Any]
+_MARKERS = (Put, Patch, Delete)
 
 
 def _nodes(annotation: Any) -> Iterator[Any]:
-    """Walk a return annotation, stopping at Patch[...] / Delete[...] leaves."""
-    if get_origin(annotation) in (Patch, Delete) or not get_args(annotation):
+    """Walk a return annotation, stopping at Put[...] / Patch[...] / Delete[...] leaves."""
+    if get_origin(annotation) in _MARKERS or not get_args(annotation):
         yield annotation
         return
     for arg in get_args(annotation):
@@ -36,9 +37,9 @@ class Module:
     | `list[X]`, `X: Entity` | `store.all(X)`, subclasses included |
     | `X`, `X: Config` | the step's config, else `store.one(X)` |
 
-    The return annotation forms the output contract: `Entity` and `Config` types are
-    *produced*, types inside `Patch[...]` and `Delete[...]` are *touched*, and `None`
-    means the module writes nothing.
+    The return annotation forms the output contract: `Entity` and `Config` types, bare or
+    inside `Put[...]`, are *produced*, types inside `Patch[...]` and `Delete[...]` are
+    *touched*, and `None` means the module writes nothing.
 
     Args:
         fn: The annotated function to wrap.
@@ -53,7 +54,7 @@ class Module:
     Raises:
         TypeError: If a parameter is unannotated, if an annotation is not
             `list[Entity subclass]` or a `Config` subclass, if the return is
-            unannotated, or if `Patch`/`Delete` is used without a type parameter.
+            unannotated, or if `Put`/`Patch`/`Delete` is used without a type parameter.
     """
 
     def __init__(self, fn: Callable[..., Any]):
@@ -86,11 +87,13 @@ class Module:
         produces: list[type] = []
         touches: list[type] = []
         for node in _nodes(annotation):
-            if node in (Patch, Delete):
+            if node in _MARKERS:
                 raise TypeError(f"{self.name}: annotate {node.__name__}[YourEntity], not a bare {node.__name__}")
             origin = get_origin(node)
             if origin in (Patch, Delete):
                 touches.extend(a for a in get_args(node) if isinstance(a, type) and issubclass(a, Entity))
+            elif origin is Put:
+                produces.extend(a for a in get_args(node) if isinstance(a, type) and issubclass(a, (Entity, Config)))
             elif isinstance(node, type) and issubclass(node, (Entity, Config)):
                 produces.append(node)
         return produces, touches
@@ -128,7 +131,7 @@ class Module:
         result = self.fn(**kwargs)
         if result is None:
             return []
-        ops: list[_Op] = [result] if isinstance(result, (Entity, Config, Patch, Delete)) else list(result)
+        ops: list[_Op] = [result] if isinstance(result, (Entity, Config, Put, Patch, Delete)) else list(result)
         for op in ops:
             self._check_declared(op)
         return ops
@@ -140,8 +143,10 @@ class Module:
                     f"{self.name} returned {op!r} but {type(op).__name__}"
                     f"[{type(op.target).__name__}] is not in its return type"
                 )
-        elif not any(isinstance(op, t) for t in self.produces):
-            raise TypeError(f"{self.name} produced a {type(op).__name__}, which is not in its return type")
+            return
+        produced = op.target if isinstance(op, Put) else op
+        if not any(isinstance(produced, t) for t in self.produces):
+            raise TypeError(f"{self.name} produced a {type(produced).__name__}, which is not in its return type")
 
     def __repr__(self) -> str:
         reads = ", ".join(f"{c.__name__}{'[]' if many else ''}" for _, many, c in self.reads) or "-"

@@ -5,7 +5,7 @@ the expensive work starts.
 
 | When | What's checked | Exception |
 |---|---|---|
-| `@module` (import) | Every parameter annotated, supported annotation, return annotated, `Patch`/`Delete` parameterized | `TypeError` |
+| `@module` (import) | Every parameter annotated, supported annotation, return annotated, `Put`/`Patch`/`Delete` parameterized | `TypeError` |
 | `check` (start of `run`) | Every entity type read or touched is provided by the initial `Store` or by an upstream step | `LookupError` |
 | per step, before applying | Output contract honored; `Patch`/`Delete` targets present and unambiguous; `Patch` fields exist | `TypeError` / `KeyError` / `ValueError` |
 | on apply | pydantic validation of every object and every written field | `ValidationError` |

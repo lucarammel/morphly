@@ -39,7 +39,7 @@ Read in this order the first time; jump straight to any card once you know what 
 
     ---
 
-    `Entity`, `Config`, `Store`, `Patch`, `Delete`, `view` — the six building blocks.
+    `Entity`, `Config`, `Store`, `Put`, `Patch`, `Delete`, `view` — the building blocks.
 
 -   :lucide-workflow:{ .lg .middle } **[Modules and workflows](modules-and-workflows.md)**
 

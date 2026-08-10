@@ -6,9 +6,9 @@ import copy
 from collections.abc import Callable, Iterable
 from typing import Any
 
-from morphly.entity import Config, Entity
+from morphly.entity import Entity
 from morphly.module import Module, Step, _config, _Op
-from morphly.operations import Delete, Patch, check_fields
+from morphly.operations import Delete, Patch, Put, check_fields
 from morphly.store import Store
 
 
@@ -333,7 +333,8 @@ def _apply(ops: Iterable[_Op], store: Store, touches: list[type], step_name: str
             assert stored is not None
             store.patch(stored, op.fields)
             store._record(step_name, "patch", stored, tuple(op.fields))
-        elif isinstance(op, (Entity, Config)):
-            store.put(op)
-            if isinstance(op, Entity):
-                store._record(step_name, "put", op)
+        else:
+            created = op.target if isinstance(op, Put) else op
+            store.put(created)
+            if isinstance(created, Entity):
+                store._record(step_name, "put", created)

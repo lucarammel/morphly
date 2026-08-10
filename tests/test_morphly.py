@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 import morphly.workflow
-from morphly import Config, Delete, Entity, Patch, Step, Store, Workflow, Write, module, view
+from morphly import Config, Delete, Entity, Patch, Put, Step, Store, Workflow, Write, module, view
 
 
 class Plant(Entity):
@@ -311,6 +311,12 @@ def test_declaration_errors():
         def bare_patch(plants: list[Plant]) -> list[Patch]:
             raise NotImplementedError
 
+    with pytest.raises(TypeError, match=r"Put\[YourEntity\]"):
+
+        @module
+        def bare_put(plants: list[Plant]) -> list[Put]:
+            raise NotImplementedError
+
 
 def test_exact_type_wins_over_lineage():
     store = Store(Plant(name="x", pmax=1, cost=1), ThermalPlant(name="x", pmax=2, cost=1))
@@ -521,3 +527,80 @@ def test_history_follows_the_lineage(store: Store):
 def test_history_survives_a_snapshot(store: Store):
     Workflow(bidding).run(store)
     assert copy.deepcopy(store).history(Order, "o_a") == [Write("bidding", "put")]
+
+
+def test_put_repr():
+    order = Order(name="o_a", volume=1, price=1)
+    assert repr(Put(order)) == "Put(Order(name='o_a'))"
+
+
+def test_put_creates_like_a_bare_entity(store: Store):
+    @module
+    def explicit(plants: list[Plant]) -> list[Put[Order]]:
+        return [Put(Order(name=f"o_{p.name}", volume=p.pmax, price=p.cost)) for p in plants]
+
+    Workflow(explicit).run(store)
+    assert sorted(o.name for o in store.all(Order)) == ["o_a", "o_b"]
+    assert store.find(Order, "o_a").price == 10
+    assert store.history(Order, "o_a") == [Write("explicit", "put")]
+
+
+def test_put_replaces_the_stored_object(store: Store):
+    store.put(Order(name="o_a", volume=1, price=1))
+
+    @module
+    def replace(orders: list[Order]) -> Put[Order]:
+        return Put(Order(name="o_a", volume=9, price=9))
+
+    Workflow(replace).run(store)
+    assert store.find(Order, "o_a").volume == 9
+
+
+def test_put_declares_the_type_as_produced(store: Store):
+    @module
+    def explicit(plants: list[Plant]) -> list[Put[Order] | Patch[Plant] | Delete[Plant]]:
+        return [Put(Order(name="o_x", volume=1, price=1))]
+
+    assert explicit.produces == [Order]
+    assert explicit.touches == [Plant, Plant]
+    Workflow(explicit, clearing).check(store)  # Order is produced upstream, wrapped in a Put
+
+
+def test_put_works_for_configs(store: Store):
+    class Summary(Config):
+        total: float = 0.0
+
+    @module
+    def summarize(plants: list[Plant]) -> Put[Summary]:
+        return Put(Summary(total=sum(p.pmax for p in plants)))
+
+    Workflow(summarize).run(store)
+    assert store.one(Summary).total == 150
+
+
+def test_put_of_an_undeclared_type_is_rejected(store: Store):
+    @module
+    def liar(plants: list[Plant]) -> list[Put[Order]]:
+        return [Put(Plant(name="ghost", pmax=1, cost=1))]  # ty: ignore[invalid-return-type]
+
+    with pytest.raises(TypeError, match="produced a Plant, which is not in its return type"):
+        Workflow(liar).run(store)
+
+
+def test_put_and_bare_entities_mix(store: Store):
+    @module
+    def both(plants: list[Plant]) -> list[Put[Order] | Order]:
+        return [Put(Order(name="o_a", volume=1, price=1)), Order(name="o_b", volume=2, price=2)]
+
+    Workflow(both).run(store)
+    assert sorted(o.name for o in store.all(Order)) == ["o_a", "o_b"]
+
+
+def test_put_shows_up_as_produced_in_explain_and_mermaid(store: Store):
+    @module
+    def explicit(plants: list[Plant]) -> list[Put[Order]]:
+        return [Put(Order(name="o_x", volume=1, price=1))]
+
+    workflow = Workflow(explicit)
+    assert workflow.explain() == "1. explicit: explicit(Plant[]) -> Order"
+    assert workflow.to_mermaid() == "flowchart LR\n    Plant --> explicit\n    explicit --> Order"

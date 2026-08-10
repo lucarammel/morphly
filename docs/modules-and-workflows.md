@@ -57,15 +57,21 @@ The return annotation is **required** and forms the output contract.
 |---|---|
 | `None` | No change. Read-only module: export, monitoring, metrics. |
 | an `Entity` / a `Config` | Upsert. |
-| an iterable of `Entity` / `Config` / `Patch` / `Delete` | Applied in order. |
+| a `Put` | The same upsert, said explicitly. |
+| an iterable of `Entity` / `Config` / `Put` / `Patch` / `Delete` | Applied in order. |
 
 ```python
 -> list[Payslip]                        # creates / replaces Payslip instances
+-> list[Put[Payslip]]                   # the same, spelled out
 -> list[Patch[Employee]]                # updates a few fields
 -> list[Delete[Timesheet]]              # deletes
 -> list[Payslip | Delete[Timesheet]]    # several types, several operations
 -> None                                 # touches nothing
 ```
+
+`Put` is sugar, never a requirement: a bare entity keeps meaning creation. It earns its place in a wide
+union — `-> list[Put[Payslip] | Patch[Employee] | Delete[Timesheet]]` reads as the three verbs at a
+glance, where a bare `Payslip` among the wrappers is easy to miss.
 
 Returning something the signature doesn't declare is a `TypeError`:
 
@@ -78,7 +84,8 @@ TypeError: undeclared returned Patch(Employee(name='ada'), gross)
 
 The contract draws a distinction the checker relies on:
 
-- **produced** (`-> list[Payslip]`): the type may not exist yet — this step brings it into being;
+- **produced** (`-> list[Payslip]` or `-> list[Put[Payslip]]`): the type may not exist yet — this step
+  brings it into being;
 - **touched** (`Patch[X]`, `Delete[X]`): the type must already be there, in the initial store or from an
   upstream step.
 
@@ -88,8 +95,8 @@ That's the whole basis of [validation](validation.md).
 
 - A step's outputs are **collected, validated, then applied**. A step never applies halfway.
 - Application order is return order. A `put` then a `Delete` on the same object leaves it deleted.
-- Returning a full entity **replaces** any object under the same `(type, name)`. Partial updates go
-  through `Patch`.
+- Returning a full entity, bare or in a `Put`, **replaces** any object under the same `(type, name)`.
+  Partial updates go through `Patch`.
 
 ## `Step` — per-step configuration
 

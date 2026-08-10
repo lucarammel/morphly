@@ -4,7 +4,7 @@ from importlib.metadata import version
 
 from morphly.entity import Config, Entity
 from morphly.module import Module, Step, module
-from morphly.operations import Delete, Patch, view
+from morphly.operations import Delete, Patch, Put, view
 from morphly.store import Store, Write
 from morphly.workflow import Workflow
 
@@ -16,6 +16,7 @@ __all__ = [
     "Entity",
     "Module",
     "Patch",
+    "Put",
     "Step",
     "Store",
     "Workflow",
