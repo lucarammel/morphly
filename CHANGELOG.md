@@ -23,7 +23,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## Unreleased
+## 0.1.2 — 2026-08-12
 
 - ✨ `Put[E]` is an explicit creation marker, so a return annotation can spell out all three verbs —
   `-> list[Put[Payslip] | Patch[Employee] | Delete[Timesheet]]` — instead of leaving creation implicit in
