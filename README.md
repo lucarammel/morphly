@@ -13,8 +13,6 @@
 [![docs](https://img.shields.io/badge/docs-lucarammel.github.io-6c63ff)](https://lucarammel.github.io/morphly/)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-> **Status**: under active development — no stable release yet.
-
 [Why](#why-morphly) · [Example](#example) · [Installation](#installation) · [Documentation](https://lucarammel.github.io/morphly/)
 
 </div>
