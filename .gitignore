@@ -8,6 +8,5 @@ dist/
 .coverage
 coverage.xml
 coverage.svg
-uv.lock
 .claude/
 site/
